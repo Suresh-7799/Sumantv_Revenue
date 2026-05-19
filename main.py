@@ -26,5 +26,7 @@ if __name__ == "__main__":
 
         port=port,
 
-        debug=False
+        debug=False,
+
+        allow_unsafe_werkzeug=True
     )
