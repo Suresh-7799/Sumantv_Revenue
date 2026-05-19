@@ -25,18 +25,51 @@ from app.models.chat_message import (
 )
 
 
+@socketio.on("connect")
+
+def handle_connect():
+
+    print("SOCKET CONNECTED")
+
+    if not current_user.is_authenticated:
+
+        print("USER NOT AUTHENTICATED")
+
+        return False
+
+    print(f"CONNECTED USER: {current_user.id}")
+
+
 @socketio.on("join")
 
 def handle_join():
 
-    join_room(
-        str(current_user.id)
-    )
+    if not current_user.is_authenticated:
+
+        print("JOIN FAILED")
+
+        return
+
+    room = str(current_user.id)
+
+    join_room(room)
+
+    print(f"JOINED ROOM: {room}")
 
 
 @socketio.on("send_message")
 
 def handle_send_message(data):
+
+    print("SEND EVENT HIT")
+
+    print(data)
+
+    if not current_user.is_authenticated:
+
+        print("USER AUTH FAILED")
+
+        return
 
     receiver_id = int(
         data["receiver_id"]
@@ -48,59 +81,69 @@ def handle_send_message(data):
 
         return
 
-    new_message = ChatMessage(
+    try:
 
-        sender_id=current_user.id,
+        new_message = ChatMessage(
 
-        receiver_id=receiver_id,
+            sender_id=current_user.id,
 
-        message=message,
+            receiver_id=receiver_id,
 
-        created_at=datetime.now()
-    )
+            message=message,
 
-    db.session.add(
-        new_message
-    )
-
-    db.session.commit()
-
-    from datetime import datetime
-
-    payload = {
-
-        "id":
-        new_message.id,
-
-        "sender_id":
-        current_user.id,
-
-        "receiver_id":
-        receiver_id,
-
-        "message":
-        message,
-
-        "created_at":
-        datetime.now().strftime(
-            "%I:%M %p"
+            created_at=datetime.now()
         )
-    }
 
-    emit(
+        db.session.add(
+            new_message
+        )
 
-        "receive_message",
+        db.session.commit()
 
-        payload,
+        print("MESSAGE SAVED")
 
-        room=str(receiver_id)
-    )
+        payload = {
 
-    emit(
+            "id":
+            new_message.id,
 
-        "receive_message",
+            "sender_id":
+            current_user.id,
 
-        payload,
+            "receiver_id":
+            receiver_id,
 
-        room=str(current_user.id)
-    )
+            "message":
+            message,
+
+            "created_at":
+            new_message.created_at.strftime(
+                "%I:%M %p"
+            )
+        }
+
+        emit(
+
+            "receive_message",
+
+            payload,
+
+            room=str(receiver_id)
+        )
+
+        emit(
+
+            "receive_message",
+
+            payload,
+
+            room=str(current_user.id)
+        )
+
+        print("MESSAGE EMITTED")
+
+    except Exception as e:
+
+        print("CHAT ERROR:", str(e))
+
+        db.session.rollback()

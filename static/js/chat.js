@@ -1,106 +1,95 @@
+const socket = window.socket;
+
 const chatFab =
-document.getElementById(
-    "chatFab"
-);
+document.getElementById("chatFab");
 
 const chatDrawer =
-document.getElementById(
-    "chatDrawer"
-);
+document.getElementById("chatDrawer");
 
 const closeChatDrawer =
-document.getElementById(
-    "closeChatDrawer"
-);
+document.getElementById("closeChatDrawer");
 
 const chatConversation =
-document.getElementById(
-    "chatConversation"
-);
+document.getElementById("chatConversation");
 
 const activeChatUser =
-document.getElementById(
-    "activeChatUser"
-);
+document.getElementById("activeChatUser");
 
 const chatMessages =
-document.getElementById(
-    "chatMessages"
-);
+document.getElementById("chatMessages");
 
 const sendChatMessage =
-document.getElementById(
-    "sendChatMessage"
-);
+document.getElementById("sendChatMessage");
 
 const chatMessageInput =
-document.getElementById(
-    "chatMessageInput"
-);
+document.getElementById("chatMessageInput");
 
 const chatUserSearch =
-document.getElementById(
-    "chatUserSearch"
-);
+document.getElementById("chatUserSearch");
 
 let activeReceiverId = null;
+
+
+/* =========================
+   SOCKET DEBUG
+========================= */
+
+socket.on("connect", ()=>{
+
+    console.log(
+        "SOCKET CONNECTED:",
+        socket.id
+    );
+
+    socket.emit("join");
+});
+
+socket.on("connect_error", (err)=>{
+
+    console.error(
+        "SOCKET ERROR:",
+        err
+    );
+});
 
 
 /* =========================
    OPEN DRAWER
 ========================= */
 
-chatFab.onclick = (e)=>{
+chatFab?.addEventListener(
 
-    e.stopPropagation();
+    "click",
 
-    const isActive =
+    (e)=>{
 
-    chatDrawer.classList.contains(
-        "active"
-    );
+        e.stopPropagation();
 
-    if(isActive){
-
-        chatDrawer.classList.remove(
+        chatDrawer.classList.toggle(
             "active"
         );
-
-        chatDrawer.style.display =
-        "none";
-
-        chatConversation.style.display =
-        "none";
     }
-
-    else{
-
-        chatDrawer.style.display =
-        "flex";
-
-        requestAnimationFrame(()=>{
-
-            chatDrawer.classList.add(
-                "active"
-            );
-
-        });
-    }
-};
+);
 
 
 /* =========================
    CLOSE DRAWER
 ========================= */
 
-closeChatDrawer.onclick = ()=>{
+closeChatDrawer?.addEventListener(
 
-    chatDrawer.style.display =
-    "none";
+    "click",
 
-    chatConversation.style.display =
-    "none";
-};
+    ()=>{
+
+        chatDrawer.classList.remove(
+            "active"
+        );
+
+        chatConversation.style.display =
+        "none";
+    }
+);
 
 
 /* =========================
@@ -126,8 +115,9 @@ chatUserSearch?.addEventListener(
 
             const name =
 
-            item.dataset.name
-            .toLowerCase();
+            (
+                item.dataset.name || ""
+            ).toLowerCase();
 
             item.style.display =
 
@@ -137,58 +127,6 @@ chatUserSearch?.addEventListener(
 
                 : "none";
         });
-    }
-);
-
-
-/* =========================
-   OUTSIDE CLICK CLOSE
-========================= */
-
-document.addEventListener(
-
-    "mousedown",
-
-    (e)=>{
-
-        if(
-
-            !chatDrawer.classList.contains(
-                "active"
-            )
-        ){
-
-            return;
-        }
-
-        const insideDrawer =
-
-        chatDrawer.contains(
-            e.target
-        );
-
-        const insideFab =
-
-        chatFab.contains(
-            e.target
-        );
-
-        if(
-
-            insideDrawer ||
-
-            insideFab
-        ){
-
-            return;
-        }
-
-        chatDrawer.classList.remove(
-            "active"
-        );
-
-        chatConversation.style.display =
-        "none";
     }
 );
 
@@ -214,14 +152,11 @@ document.addEventListener(
             return;
         }
 
-        activeReceiverId =
-
-        Number(
+        activeReceiverId = Number(
             item.dataset.userId
         );
 
         activeChatUser.innerText =
-
         item.dataset.name;
 
         chatConversation.style.display =
@@ -230,6 +165,7 @@ document.addEventListener(
         await loadMessages();
     }
 );
+
 
 /* =========================
    LOAD MESSAGES
@@ -244,15 +180,12 @@ async function loadMessages(){
 
     try{
 
-        const response =
-
-        await fetch(
+        const response = await fetch(
 
             `/chat/messages/${activeReceiverId}`
         );
 
         const messages =
-
         await response.json();
 
         chatMessages.innerHTML = "";
@@ -279,22 +212,6 @@ async function loadMessages(){
    SEND MESSAGE
 ========================= */
 
-sendChatMessage.onclick =
-sendMessage;
-
-chatMessageInput.addEventListener(
-
-    "keypress",
-
-    (e)=>{
-
-        if(e.key === "Enter"){
-
-            sendMessage();
-        }
-    }
-);
-
 function sendMessage(){
 
     const message =
@@ -310,6 +227,11 @@ function sendMessage(){
 
         return;
     }
+
+    console.log(
+        "SENDING:",
+        message
+    );
 
     socket.emit(
 
@@ -329,13 +251,33 @@ function sendMessage(){
 }
 
 
+sendChatMessage?.addEventListener(
+
+    "click",
+
+    sendMessage
+);
+
+
+chatMessageInput?.addEventListener(
+
+    "keypress",
+
+    (e)=>{
+
+        if(e.key === "Enter"){
+
+            e.preventDefault();
+
+            sendMessage();
+        }
+    }
+);
+
+
 /* =========================
    RECEIVE MESSAGE
 ========================= */
-
-socket.off(
-    "receive_message"
-);
 
 socket.on(
 
@@ -343,12 +285,15 @@ socket.on(
 
     (data)=>{
 
-        const senderId =
+        console.log(
+            "RECEIVED:",
+            data
+        );
 
+        const senderId =
         Number(data.sender_id);
 
         const receiverId =
-
         Number(data.receiver_id);
 
         if(
@@ -376,26 +321,23 @@ socket.on(
 
 function appendMessage(data){
 
-    const alreadyExists =
+    const exists =
 
     document.querySelector(
 
         `[data-message-id="${data.id}"]`
     );
 
-    if(alreadyExists){
+    if(exists){
 
         return;
     }
 
     const div =
-
-    document.createElement(
-        "div"
-    );
+    document.createElement("div");
 
     div.dataset.messageId =
-    data.id || "";
+    data.id;
 
     const isMine =
 
@@ -416,15 +358,11 @@ function appendMessage(data){
     div.innerHTML = `
 
         <div class="chat-message-text">
-
             ${escapeHtml(data.message)}
-
         </div>
 
         <div class="chat-message-time">
-
-            ${data.created_at || ""}
-
+            ${data.created_at}
         </div>
     `;
 
@@ -439,10 +377,7 @@ function appendMessage(data){
 function escapeHtml(text){
 
     const div =
-
-    document.createElement(
-        "div"
-    );
+    document.createElement("div");
 
     div.innerText = text;
 
@@ -457,47 +392,5 @@ function escapeHtml(text){
 function scrollMessages(){
 
     chatMessages.scrollTop =
-
     chatMessages.scrollHeight;
 }
-
-/* =========================
-   OUTSIDE CLICK CLOSE
-========================= */
-
-document.addEventListener(
-
-    "click",
-
-    (e)=>{
-
-        const clickedInsideDrawer =
-
-        chatDrawer.contains(
-            e.target
-        );
-
-        const clickedFab =
-
-        chatFab.contains(
-            e.target
-        );
-
-        if(
-
-            !clickedInsideDrawer
-
-            &&
-
-            !clickedFab
-        ){
-
-            chatDrawer.classList.remove(
-                "active"
-            );
-
-            chatConversation.style.display =
-            "none";
-        }
-    }
-);

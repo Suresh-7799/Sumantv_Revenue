@@ -360,6 +360,17 @@
     flex-direction:column;
 
     z-index:30;
+
+    display:none;
+
+    flex-direction:column;
+
+    height:100%;
+}
+
+.chat-conversation.active{
+
+    display:flex;
 }
 
 .chat-conversation-header{
@@ -527,3 +538,5 @@
 
     margin-top:2px;
 }
+
+
