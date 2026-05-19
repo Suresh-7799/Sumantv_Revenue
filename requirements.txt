@@ -1,4 +1,5 @@
 Flask
+gunicorn
 Flask-SQLAlchemy
 Flask-Migrate
 Flask-Login
@@ -9,8 +10,7 @@ psycopg2-binary
 python-dotenv
 email-validator
 redis
-flask-socketio
-eventlet
+Flask-SocketIO
 celery
 Flask-Limiter
 Pillow

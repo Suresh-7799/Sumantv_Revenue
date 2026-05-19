@@ -161,12 +161,7 @@
 
 <script>
 
-window.socket = io({
-
-    transports: ["websocket"],
-
-    upgrade: false
-});
+window.socket = io();
 
 socket.on(
 

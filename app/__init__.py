@@ -129,7 +129,9 @@ def initialize_extensions(app):
 
         app,
 
-        cors_allowed_origins="*"
+        cors_allowed_origins="*",
+
+        async_mode="threading"
     )
 
     limiter.init_app(app)
