@@ -1,0 +1,15 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+Flask-Bcrypt
+Flask-WTF
+Flask-Mail
+psycopg2-binary
+python-dotenv
+email-validator
+redis
+flask-socketio
+eventlet
+celery
+Flask-Limiter

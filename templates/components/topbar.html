@@ -1,0 +1,252 @@
+<header
+class="app-topbar"
+
+{% if current_user.banner_image %}
+
+style="
+background-image:
+linear-gradient(
+rgba(2,6,23,.82),
+rgba(2,6,23,.82)
+),
+url('{{ current_user.banner_image }}');
+"
+
+{% endif %}
+>
+
+    <div class="topbar-left">
+
+        <button
+        id="sidebarToggle"
+        class="sidebar-toggle"
+        aria-label="Toggle sidebar">
+
+            ☰
+
+        </button>
+
+        <div class="topbar-heading">
+
+            <p class="topbar-label">
+                Hello,
+            </p>
+
+            <h3 class="topbar-title">
+
+                {{ display_name(current_user.username) }} 👋
+
+            </h3>
+
+        </div>
+
+    </div>
+
+    <div class="topbar-search">
+
+        <div class="search-wrapper">
+
+            <svg
+            class="search-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+
+                <circle cx="11" cy="11" r="8"></circle>
+
+                <path d="m21 21-4.3-4.3"></path>
+
+            </svg>
+
+            <input
+            id="sidebarSearch"
+            type="text"
+            class="search-input"
+            placeholder="Search navigation...">
+
+        </div>
+
+    </div>
+
+    <div class="topbar-right">
+
+        <!-- THEME -->
+        <button
+        class="topbar-icon-btn"
+        data-theme-toggle>
+
+            🌙
+
+        </button>
+
+        <!-- NOTIFICATIONS -->
+        <button
+        class="topbar-icon-btn">
+
+            🔔
+
+        </button>
+
+        <!-- PROFILE -->
+        <div class="profile-dropdown-wrapper">
+
+            <button
+            id="profileDropdownToggle"
+            class="profile-trigger">
+
+                {% if request.endpoint != 'dashboard.profile' %}
+
+                <div class="profile-avatar">
+
+                    {% if current_user.profile_image %}
+
+                        <img
+                        src="{{ current_user.profile_image }}"
+                        alt="Profile">
+
+                    {% elif current_user.is_authenticated %}
+
+                        {{ current_user.display_name[0] | upper }}
+
+                    {% else %}
+
+                        G
+
+                    {% endif %}
+
+                </div>
+                {% endif %}
+
+            </button>
+
+            <!-- DROPDOWN -->
+            <div
+            id="profileDropdownMenu"
+            class="profile-dropdown-menu">
+
+                <a
+                href="{{ url_for('dashboard.profile') }}"
+                class="dropdown-item">
+
+                    <img
+                    src="{{ url_for('static', filename='user.png') }}"
+                    alt="User">
+
+                    <span>
+                        View Profile
+                    </span>
+
+                </a>
+
+                <a
+                href="{{ url_for('dashboard.settings') }}"
+                class="dropdown-item">
+
+                    <img
+                    src="{{ url_for('static', filename='settings.png') }}"
+                    alt="Settings">
+
+                    <span>
+                        Account Settings
+                    </span>
+
+                </a>
+
+                <a
+                href="#"
+                class="dropdown-item">
+
+                    <img
+                    src="{{ url_for('static', filename='password.png') }}"
+                    alt="Password">
+
+                    <span>
+                        Change Password
+                    </span>
+
+                </a>
+
+                <div class="dropdown-divider"></div>
+
+                <a
+                href="{{ url_for('auth.logout') }}"
+                class="dropdown-item danger">
+
+                    <img
+                    src="{{ url_for('static', filename='logout.png') }}"
+                    alt="Logout">
+
+                    <span>
+                        Logout
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const toggle =
+            document.getElementById(
+                "profileDropdownToggle"
+            );
+
+        const menu =
+            document.getElementById(
+                "profileDropdownMenu"
+            );
+
+        if (!toggle || !menu) {
+            return;
+        }
+
+        toggle.addEventListener(
+            "click",
+            (event) => {
+
+                event.stopPropagation();
+
+                menu.classList.toggle(
+                    "active"
+                );
+
+            }
+        );
+
+        document.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    !menu.contains(event.target)
+                    &&
+                    !toggle.contains(event.target)
+                ) {
+
+                    menu.classList.remove(
+                        "active"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+);
+
+</script>

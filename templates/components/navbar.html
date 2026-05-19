@@ -1,0 +1,43 @@
+<nav class="navbar">
+
+    <div class="navbar-left">
+
+        <a
+        href="{{ url_for('dashboard.home') }}"
+        class="navbar-brand">
+
+            <img
+            src="{{ url_for('static', filename='logo.png') }}"
+            alt="Logo">
+
+            <span>
+                Sumantv Workspace
+            </span>
+
+        </a>
+
+    </div>
+
+    <div class="navbar-right">
+
+        {% if current_user.is_authenticated %}
+
+            <div class="navbar-user">
+
+                <div class="profile-avatar">
+
+                    {{ display_name(current_user.username)[0] }}
+
+                </div>
+
+                <span>
+                    {{ display_name(current_user.username) }}
+                </span>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</nav>

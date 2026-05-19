@@ -1,0 +1,43 @@
+{% extends "layouts/base.html" %}
+
+{% block extra_css %}
+    {{ super() }}
+    
+    <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/admin.css') }}">
+
+    {% block page_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+
+<div class="app-shell">
+
+    {% include "components/sidebar.html" %}
+
+    <main class="app-main">
+
+        {% include "components/topbar.html" %}
+
+        <section class="app-content">
+
+            <div class="page-container">
+
+                {% block dashboard_content %}
+                {% endblock %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    {{ super() }}
+    {% block page_js %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,133 @@
+<aside
+id="appSidebar"
+class="app-sidebar">
+
+    <div class="sidebar-inner">
+
+        <a
+        href="{{ url_for('dashboard.home') }}"
+        class="sidebar-logo">
+
+            <div class="sidebar-logo-icon">
+
+                <img
+                src="{{ url_for('static', filename='logo.png') }}"
+                alt="Logo">
+
+            </div>
+
+            <div class="sidebar-logo-text">
+
+                <span>
+                    Workspace
+                </span>
+
+                <strong>
+                    Dashboard
+                </strong>
+
+            </div>
+
+        </a>
+
+        <nav class="sidebar-nav">
+
+            <a
+            href="{{ url_for('dashboard.home') }}"
+            class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">
+
+                <span class="sidebar-icon">◈</span>
+
+                <span>Overview</span>
+
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <span class="sidebar-icon">◎</span>
+                <span>Revenue</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <span class="sidebar-icon">◉</span>
+                <span>Analytics</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <span class="sidebar-icon">◆</span>
+                <span>Workspace</span>
+            </a>
+
+            {% if current_user.is_authenticated
+            and current_user.role
+            and current_user.role.name == "Admin" %}
+
+            <a
+            href="{{ url_for('admin.team') }}"
+            class="sidebar-link {% if active_page == 'team' %}active{% endif %}">
+
+                <span class="sidebar-icon">
+                    ◉
+                </span>
+
+                <span>
+                    My Team
+                </span>
+
+            </a>
+
+            {% endif %}
+
+        </nav>
+
+        <div class="sidebar-footer">
+
+            <a
+            href="#"
+            class="sidebar-account">
+
+                <div class="sidebar-account-avatar">
+
+                    {% if current_user.is_authenticated %}
+                        {{ (current_user.display_name or current_user.first_name or current_user.username)[0] | upper }}
+                    {% else %}
+                        G
+                    {% endif %}
+
+                </div>
+
+                <div class="sidebar-account-info">
+
+                    <strong>
+
+                        {% if current_user.is_authenticated %}
+                            {{ display_name(current_user.username) }}
+                        {% else %}
+                            Guest
+                        {% endif %}
+
+                    </strong>
+
+                    <span>
+
+                        {% if current_user.is_authenticated %}
+                            {{ current_user.email }}
+                        {% else %}
+                            Workspace User
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</aside>
+
+<div
+id="sidebarOverlay"
+class="sidebar-overlay">
+</div>

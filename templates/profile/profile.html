@@ -1,0 +1,707 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block page_title %}
+Profile
+{% endblock %}
+
+{% block page_css %}
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+
+<section class="profile-page">
+<div
+id="toastContainer"
+class="toast-container"></div>
+
+    <div class="profile-header glass-card">
+
+        <div
+        class="profile-cover"
+
+        style="
+        background:
+        url('{{ current_user.banner_image }}')
+        center/cover no-repeat;
+        "
+        {% endif %}
+        ">
+
+            <button
+            type="button"
+            id="openBannerUpload"
+            class="banner-edit-btn">
+
+                <i data-lucide="image-plus"></i>
+
+            </button>
+
+        </div>
+
+        <input
+        type="file"
+        id="bannerInput"
+        accept="image/png,image/jpeg,image/webp"
+        hidden>
+
+        <div class="profile-cover-overlay"></div>
+
+        <div class="profile-cover-content">
+
+            <div class="profile-avatar-wrapper">
+
+                <div class="profile-avatar profile-page-avatar">
+
+                    <img
+                    id="mainProfileAvatar"
+                    src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+                    alt="Profile">
+
+                    <button
+                    type="button"
+                    id="openDpModal"
+                    class="profile-avatar-edit">
+
+                        Edit Photo
+
+                    </button>
+
+                    <input
+                    id="profileImageInput"
+                    type="file"
+                    accept="image/*"
+                    hidden>
+
+                    <input
+                    type="hidden"
+                    id="dpCsrfToken"
+                    value="{{ csrf_token() }}">
+
+                    <input
+                    type="hidden"
+                    id="profileUploadUrl"
+                    value="{{ url_for('dashboard.upload_profile_image') }}">
+
+                    <input
+                    type="hidden"
+                    id="bannerUploadUrl"
+                    value="{{ url_for('dashboard.upload_banner') }}">
+
+                </div>
+
+            </div>
+
+            <div class="dp-modal" id="dpModal">
+
+                <div class="dp-modal-content">
+
+                    <div class="dp-modal-header">
+
+                        <h3>
+                            Update Profile Photo
+                        </h3>
+
+                        <button
+                        type="button"
+                        id="closeDpModal">
+
+                            ×
+
+                        </button>
+
+                    </div>
+
+                    <div class="current-dp-preview">
+
+                        <img
+                        id="currentPreviewImage"
+                        src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+                        alt="Current DP">
+
+                    </div>
+
+                    <div class="dp-modal-actions">
+
+                        <button
+                        type="button"
+                        class="choose-btn"
+                        id="chooseImageBtn">
+
+                            Choose Image
+
+                        </button>
+
+
+                        <button
+                        type="button"
+                        id="saveDpBtn"
+                        class="hidden">
+
+                            Save Changes
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="profile-cover-meta">
+
+                <h1>
+                    {{ current_user.display_name or display_name(current_user.username) }}
+                </h1>
+
+                <p>
+                    {{ current_user.email }}
+                </p>
+
+                <span class="profile-role">
+                    {{ current_user.role.name if current_user.role else "Member" }}
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="profile-section-header">
+
+    <h2>
+        About
+    </h2>
+
+    <button
+    id="openProfileModal"
+    class="profile-edit-btn">
+
+        Edit Profile
+
+    </button>
+
+</div>
+
+<div
+id="cropStatus"
+class="crop-status">
+
+</div>
+
+<div class="profile-grid">
+
+    <!-- PRIMARY DETAILS -->
+
+    <div class="profile-card glass-card">
+
+        <div class="profile-card-header">
+
+            <h3>
+                Primary Details
+            </h3>
+
+        </div>
+
+        <div class="profile-info-grid">
+
+            <div class="profile-info-item">
+                <label>First Name</label>
+                <span>{{ current_user.first_name or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+                <label>Last Name</label>
+                <span>{{ current_user.last_name or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+                <label>Display Name</label>
+                <span>{{ current_user.display_name or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+                <label>Gender</label>
+                <span>{{ current_user.gender or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+
+                <label>Date Of Birth</label>
+
+                <span>
+
+                    {% if current_user.date_of_birth %}
+
+                        {{ format_dob(current_user.date_of_birth) }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </span>
+
+            </div>
+
+            <div class="profile-info-item">
+                <label>Blood Group</label>
+                <span>{{ current_user.blood_group or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+                <label>Marital Status</label>
+                <span>{{ current_user.marital_status or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item">
+                <label>Nationality</label>
+                <span>{{ current_user.nationality or "-" }}</span>
+            </div>
+
+            <div class="profile-info-item full-width">
+                <label>Bio / About</label>
+                <span>{{ current_user.bio or "-" }}</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- CONTACT DETAILS -->
+
+<div class="profile-card glass-card">
+
+    <div class="profile-card-header">
+
+        <h3>
+            Contact Details
+        </h3>
+
+    </div>
+
+    <div class="profile-info-grid">
+
+        <div class="profile-info-item">
+
+            <label>Email</label>
+
+            <span class="profile-email">
+                {{ current_user.email or "-" }}
+            </span>
+
+        </div>
+
+        <div class="profile-info-item">
+
+            <label>Phone</label>
+
+            <span>
+                {{ current_user.phone or "-" }}
+            </span>
+
+        </div>
+
+        <div class="profile-info-item">
+
+            <label>Employee ID</label>
+
+            <span>
+                {{ current_user.employee_id or "-" }}
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+<!-- PROFILE MODAL -->
+
+<div
+id="profileModal"
+class="profile-modal">
+
+    <div class="profile-modal-content">
+    <div class="profile-modal-body">
+
+        <div class="profile-modal-header">
+
+            <h2>
+                Edit Profile
+            </h2>
+
+            <button
+            id="closeProfileModal"
+            type="button"
+            class="profile-modal-close">
+
+                ✕
+
+            </button>
+
+        </div>
+
+        <form
+        method="POST"
+        action="{{ url_for('dashboard.update_profile') }}"
+        class="profile-form">
+
+            <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}">
+
+            <div class="profile-form-grid">
+
+                <div class="form-group">
+
+                    <label>First Name</label>
+
+                    <input
+                    type="text"
+                    name="first_name"
+                    value="{{ current_user.first_name or '' }}">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Last Name</label>
+
+                    <input
+                    type="text"
+                    name="last_name"
+                    value="{{ current_user.last_name or '' }}">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Display Name</label>
+
+                    <input
+                    type="text"
+                    name="display_name"
+                    value="{{ current_user.display_name or '' }}">
+
+                </div>
+
+                <!-- READONLY EMAIL -->
+
+                <div class="form-group">
+
+                    <label>Email</label>
+
+                    <input
+                    type="email"
+                    value="{{ current_user.email }}"
+                    readonly
+                    class="readonly-input">
+
+                </div>
+
+                <!-- READONLY PHONE -->
+
+                <div class="form-group">
+
+                    <label>Phone</label>
+
+                    <input
+                    type="text"
+                    value="{{ current_user.phone or '' }}"
+                    readonly
+                    class="readonly-input">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Gender</label>
+
+                    <select name="gender">
+
+                        <option value="">
+                            Select Gender
+                        </option>
+
+                        <option
+                        value="Male"
+                        {% if current_user.gender == "Male" %}
+                        selected
+                        {% endif %}>
+                            Male
+                        </option>
+
+                        <option
+                        value="Female"
+                        {% if current_user.gender == "Female" %}
+                        selected
+                        {% endif %}>
+                            Female
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>
+                        Date Of Birth
+                    </label>
+
+                    <div class="dob-field-wrapper">
+
+                        <input
+                            type="text"
+                            id="profile_date_of_birth"
+                            name="date_of_birth"
+                            class="form-input flatpickr-input dob-picker"
+                            placeholder="DD/MM/YYYY"
+                            autocomplete="off"
+
+                            value="{% if current_user.date_of_birth %}
+                {{ format_dob(current_user.date_of_birth) }}
+                {% endif %}"
+                        >
+
+                        <button
+                            type="button"
+                            class="dob-calendar-btn">
+
+                            <i data-lucide="calendar-days"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Marital Status</label>
+
+                    <select name="marital_status">
+
+                        <option value="">
+                            Select Status
+                        </option>
+
+                        <option
+                        value="Single"
+                        {% if current_user.marital_status == "Single" %}
+                        selected
+                        {% endif %}>
+                            Single
+                        </option>
+
+                        <option
+                        value="Married"
+                        {% if current_user.marital_status == "Married" %}
+                        selected
+                        {% endif %}>
+                            Married
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Nationality</label>
+
+                    <input
+                    type="text"
+                    name="nationality"
+                    value="{{ current_user.nationality or '' }}">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Blood Group</label>
+
+                    <input
+                    type="text"
+                    name="blood_group"
+                    value="{{ current_user.blood_group or '' }}">
+
+                </div>
+
+                <!-- READONLY EMPLOYEE ID -->
+
+                <div class="form-group">
+
+                    <label>Employee ID</label>
+
+                    <input
+                    type="text"
+                    value="{{ current_user.employee_id or '' }}"
+                    readonly
+                    class="readonly-input">
+
+                </div>
+
+                <div
+                class="form-group full-width">
+
+                    <label>Bio / About</label>
+
+                    <textarea
+                    name="bio"
+                    placeholder="Tell something about yourself...">{{ current_user.bio or '' }}</textarea>
+
+                </div>
+
+            </div> 
+            </div>
+
+            <div class="profile-form-actions">
+
+                <button
+                type="button"
+                id="cancelProfileModal"
+                class="profile-cancel-btn">
+
+                    Cancel
+
+                </button>
+
+                <button
+                type="submit"
+                class="profile-save-btn">
+
+                    Save Changes
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     BANNER CROP MODAL
+========================= -->
+
+<div
+id="bannerCropModal"
+class="crop-modal">
+
+    <div class="crop-modal-content banner-crop-content">
+
+        <button
+        class="crop-close-btn"
+        id="closeBannerCropModal">
+
+            ×
+
+        </button>
+
+        <h3>
+            Crop Banner
+        </h3>
+
+        <div class="cropper-wrapper banner-cropper-wrapper">
+
+            <img
+            id="bannerCropImage"
+            src=""
+            alt="Banner Crop">
+
+        </div>
+
+        <div class="crop-actions">
+
+            <button
+            type="button"
+            class="primary-btn"
+            id="cropBannerBtn">
+
+                Save Banner
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<link
+rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+
+<div
+class="cropper-modal"
+id="cropperModal">
+
+    <div class="cropper-modal-content">
+
+        <button
+        type="button"
+        class="cropper-close"
+        id="closeCropperModal">
+
+            ×
+
+        </button>
+
+        <h2 class="cropper-title">
+
+            Crop Profile Photo
+
+        </h2>
+
+        <div class="cropper-image-area">
+
+            <img
+            id="cropperPreviewImage"
+            src=""
+            alt="Crop Preview">
+
+        </div>
+
+        <div class="cropper-actions">
+
+            <button
+            type="button"
+            class="primary-btn"
+            id="finalCropBtn">
+
+                Done Crop
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

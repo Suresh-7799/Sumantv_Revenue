@@ -1,0 +1,174 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block page_title %}
+Team
+{% endblock %}
+
+{% block dashboard_content %}
+
+<section class="team-page">
+
+    <div class="team-header">
+
+        <h1>
+            Team Management
+        </h1>
+
+        <div class="team-search-form">
+
+            <input
+            type="text"
+            id="teamSearch"
+            placeholder="Search employees..."
+            class="team-search-input">
+
+        </div>
+
+    </div>
+
+    <div class="glass-card team-table-wrapper">
+
+        <table class="team-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Employee ID</th>
+                    <th>Date Of Birth</th>
+                    <th>Role</th>
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for user in users %}
+
+                <tr
+                onclick="window.location='{{ url_for('admin.user_details', user_id=user.id) }}'">
+
+                    <td>
+
+                        <div class="team-user">
+
+                            <div class="team-avatar">
+
+                                {% if user.profile_image %}
+
+                                <img
+                                src="{{ user.profile_image }}"
+                                alt="Profile">
+
+                                {% else %}
+
+                                {{ display_name(user.username)[0] | upper }}
+
+                                {% endif %}
+
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    {{ user.display_name or user.username }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </td>
+
+                    <td>
+                        {{ user.email }}
+                    </td>
+
+                    <td>
+                        {{ user.phone or "-" }}
+                    </td>
+
+                    <td>
+                        {{ user.employee_id or "-" }}
+                    </td>
+
+                    <td>
+
+                        {{ format_dob(user.date_of_birth) }}
+
+                    </td>
+
+                    <td>
+
+                        {{ user.role.name if user.role else "-" }}
+
+                    </td>
+
+                    <td>
+
+                        {% if user.is_active %}
+
+                            Active
+
+                        {% else %}
+
+                            Disabled
+                    
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+<script>
+
+const teamSearch =
+document.getElementById(
+    "teamSearch"
+);
+
+teamSearch.addEventListener(
+    "keyup",
+    function(){
+
+        const value =
+        this.value.toLowerCase();
+
+        document
+        .querySelectorAll(
+            ".team-table tbody tr"
+        )
+        .forEach(row=>{
+
+            row.style.display =
+            row.innerText
+            .toLowerCase()
+            .includes(value)
+
+            ? ""
+
+            : "none";
+
+        });
+
+    }
+);
+
+</script>
+
+{% endblock %}

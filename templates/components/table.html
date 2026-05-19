@@ -1,0 +1,25 @@
+<div class="table-wrapper">
+
+    <table class="dashboard-table">
+
+        <thead>
+
+            <tr>
+
+                {% for column in columns %}
+                <th>{{ column }}</th>
+                {% endfor %}
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {{ rows|safe }}
+
+        </tbody>
+
+    </table>
+
+</div>

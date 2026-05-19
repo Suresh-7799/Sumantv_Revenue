@@ -1,0 +1,486 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block page_title %}
+Employee Details
+{% endblock %}
+
+{% block page_css %}
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/admin.css') }}">
+
+{% endblock %}
+
+{% block dashboard_content %}
+
+<section class="employee-page">
+
+    <!-- COVER -->
+
+    <div class="employee-cover glass-card">
+
+        <div
+        class="employee-cover-bg"
+
+        style="
+        {% if user.banner_image %}
+        background-image:url('{{ user.banner_image }}');
+        {% endif %}
+        ">
+        </div>
+
+        <div class="employee-cover-content">
+
+            <div class="employee-avatar">
+
+                {% if user.profile_image %}
+
+                <img
+                src="{{ user.profile_image }}"
+                alt="Profile">
+
+                {% else %}
+
+                {{ (current_user.display_name or current_user.first_name or current_user.username)[0] | upper }}
+
+                {% endif %}
+
+            </div>
+
+            <div class="employee-meta">
+
+                <h1>
+                    {{ user.display_name or user.username }}
+                </h1>
+
+                <p>
+                    {{ user.email }}
+                </p>
+
+                <span class="employee-role">
+
+                    {{ user.role.name if user.role else "Member" }}
+
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- HEADER -->
+
+    <div class="employee-page-header">
+
+        <div>
+
+            <h2>
+                Employee Management
+            </h2>
+
+            <p>
+                Manage employee account and profile details
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- FORM -->
+
+    <form
+    method="POST"
+    action="{{ url_for('admin.update_user', user_id=user.id) }}">
+
+        <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}">
+
+
+        <div class="employee-grid">
+
+            <!-- PROFILE -->
+
+            <div class="employee-card glass-card">
+
+                <div class="employee-card-header">
+
+                    <h3>
+                        Profile Information
+                    </h3>
+
+                </div>
+
+                <div class="employee-form-grid">
+
+                    <div class="form-group">
+
+                        <label>
+                            First Name
+                        </label>
+
+                        <input
+                        type="text"
+                        name="first_name"
+                        value="{{ user.first_name or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Last Name
+                        </label>
+
+                        <input
+                        type="text"
+                        name="last_name"
+                        value="{{ user.last_name or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Display Name
+                        </label>
+
+                        <input
+                        type="text"
+                        name="display_name"
+                        value="{{ user.display_name or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Date Of Birth
+                        </label>
+
+                        <div class="dob-field-wrapper">
+
+                            <input
+                                type="text"
+                                id="admin_date_of_birth"
+                                name="date_of_birth"
+                                class="form-input flatpickr-input dob-picker"
+                                placeholder="DD/MM/YYYY"
+                                autocomplete="off"
+
+                                value="{% if user.date_of_birth %}
+                    {{ format_dob(user.date_of_birth) }}
+                    {% endif %}"
+                            >
+
+                            <button
+                                type="button"
+                                class="dob-calendar-btn">
+
+                                <i data-lucide="calendar-days"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Gender
+                        </label>
+
+                        <select
+                        name="gender"
+                        class="auth-input">
+
+                            <option value="Male"
+                            {% if user.gender == "Male" %}
+                            selected
+                            {% endif %}>
+                                Male
+                            </option>
+
+                            <option value="Female"
+                            {% if user.gender == "Female" %}
+                            selected
+                            {% endif %}>
+                                Female
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Marital Status
+                        </label>
+
+                        <select name="marital_status">
+
+                            <option value="">
+                                Select Status
+                            </option>
+
+                            <option
+                            value="Single"
+                            {% if user.marital_status == "Single" %}
+                            selected
+                            {% endif %}>
+                                Single
+                            </option>
+
+                            <option
+                            value="Married"
+                            {% if user.marital_status == "Married" %}
+                            selected
+                            {% endif %}>
+                                Married
+                            </option>
+
+                            <option
+                            value="Divorced"
+                            {% if user.marital_status == "Divorced" %}
+                            selected
+                            {% endif %}>
+                                Divorced
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Nationality
+                        </label>
+
+                        <input
+                        type="text"
+                        name="nationality"
+                        value="{{ user.nationality or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Blood Group
+                        </label>
+
+                        <select name="blood_group">
+
+                            <option value="">Select Blood Group</option>
+
+                            <option value="A+" {% if user.blood_group == "A+" %}selected{% endif %}>A+</option>
+                            <option value="A-" {% if user.blood_group == "A-" %}selected{% endif %}>A-</option>
+
+                            <option value="B+" {% if user.blood_group == "B+" %}selected{% endif %}>B+</option>
+                            <option value="B-" {% if user.blood_group == "B-" %}selected{% endif %}>B-</option>
+
+                            <option value="AB+" {% if user.blood_group == "AB+" %}selected{% endif %}>AB+</option>
+                            <option value="AB-" {% if user.blood_group == "AB-" %}selected{% endif %}>AB-</option>
+
+                            <option value="O+" {% if user.blood_group == "O+" %}selected{% endif %}>O+</option>
+                            <option value="O-" {% if user.blood_group == "O-" %}selected{% endif %}>O-</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group full-width">
+
+                        <label>
+                            Bio / About
+                        </label>
+
+                        <textarea
+                        name="bio"
+                        class="auth-input admin-textarea">{{ user.bio or '' }}</textarea>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ACCOUNT -->
+
+            <div class="employee-card glass-card">
+
+                <div class="employee-card-header">
+
+                    <h3>
+                        Account Controls
+                    </h3>
+
+                </div>
+
+                <div class="employee-form-grid">
+
+                    <div class="form-group">
+
+                        <label>
+                            Email
+                        </label>
+
+                        <input
+                        type="email"
+                        name="email"
+                        value="{{ user.email or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Phone
+                        </label>
+
+                        <input
+                        type="text"
+                        name="phone"
+                        value="{{ user.phone or '' }}"
+                        class="auth-input">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Employee ID
+                        </label>
+
+                        <input
+                        type="text"
+                        name="employee_id"
+                        value="{{ user.employee_id or '' }}"
+                        class="auth-input">
+
+                    </div>
+      
+                {% if user.id != current_user.id %}
+                    <div class="form-group">
+
+                        <label>
+                            Role
+                        </label>
+
+                        <select
+                        id="roleSelect"
+                        name="role_id">
+
+                            <option value="">
+                                Select Role
+                            </option>
+
+                            {% for role in roles %}
+
+                                <option
+                                value="{{ role.id }}"
+                                {% if user.role and user.role.id == role.id %}
+                                selected
+                                {% endif %}>
+
+                                    {{ role.name }}
+
+                                </option>
+
+                            {% endfor %}
+
+                            <option value="custom">
+                                + Custom Role...
+                            </option>
+
+                        </select>
+
+                        <input
+                        type="text"
+                        id="customRoleInput"
+                        name="custom_role"
+                        class="auth-input custom-role-input"
+                        placeholder="Enter Custom Role">
+
+                    </div>
+                {% endif %}                        
+
+                    <div class="form-group">
+
+                        <label>
+                            Account Status
+                        </label>
+
+                        <select
+                        name="is_active"
+                        class="auth-input">
+
+                            <option
+                            value="1"
+                            {% if user.is_active %}
+                            selected
+                            {% endif %}>
+                                Active
+                            </option>
+
+                            <option
+                            value=""
+                            {% if not user.is_active %}
+                            selected
+                            {% endif %}>
+                                Disabled
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ACTIONS -->
+
+        <div class="employee-actions">
+
+            <button
+            type="submit"
+            class="profile-save-btn">
+
+                Save Employee
+
+            </button>
+
+        </div>
+
+    </form>
+
+</section>
+
+<link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script
+src="{{ url_for(
+'static',
+filename='js/admin.js'
+) }}">
+</script>
+
+{% endblock %}

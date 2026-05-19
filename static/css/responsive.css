@@ -1,0 +1,174 @@
+/* =========================
+   LAPTOP
+========================= */
+
+@media(max-width:1400px){
+
+    .stats-grid{
+        grid-template-columns:
+        repeat(2,minmax(0,1fr));
+    }
+}
+
+/* =========================
+   TABLET
+========================= */
+
+@media(max-width:991px){
+
+    .app-sidebar{
+
+        transform:
+        translateX(-120%);
+
+        left:0;
+
+        top:0;
+        bottom:0;
+
+        border-radius:0;
+    }
+
+    .app-sidebar.mobile-open{
+
+        transform:
+        translateX(0);
+    }
+
+    .sidebar-toggle{
+        display:flex;
+    }
+
+    .app-main{
+        margin-left:0;
+    }
+
+    .dashboard-grid{
+        grid-template-columns:1fr;
+    }
+
+    .app-content{
+        padding:20px;
+    }
+
+    .stats-grid{
+        grid-template-columns:1fr;
+    }
+
+    .app-topbar{
+
+        margin:12px;
+
+        padding:0 18px;
+    }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:640px){
+
+    .dashboard-hero{
+        padding:26px;
+    }
+
+    .dashboard-panel{
+        padding:22px;
+    }
+
+    .stat-card{
+        padding:20px;
+    }
+
+    .stat-value{
+        font-size:28px;
+    }
+
+    .topbar-title{
+        font-size:18px;
+    }
+
+    .app-content{
+        padding:16px;
+    }
+
+    .btn{
+
+        width:100%;
+    }
+
+    .flex{
+        flex-wrap:wrap;
+    }
+}
+
+
+/* =========================
+   LARGE MOBILE
+========================= */
+
+@media(max-width:540px){
+
+    .topbar-search{
+        display:none;
+    }
+
+    .app-topbar{
+
+        gap:12px;
+
+        padding:0 14px;
+    }
+
+    .topbar-right{
+
+        gap:8px;
+    }
+
+    .dashboard-grid{
+
+        gap:18px;
+    }
+
+    .dashboard-panel{
+
+        border-radius:22px;
+    }
+
+    .dropdown{
+
+        width:calc(100vw - 40px);
+
+        right:0 !important;
+    }
+
+}
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media(max-width:420px){
+
+    .stat-value{
+        font-size:24px;
+    }
+
+    .topbar-title{
+        font-size:16px;
+    }
+
+    .sidebar-link{
+
+        height:50px;
+
+        font-size:14px;
+    }
+
+    .app-content{
+
+        padding:12px;
+    }
+
+}

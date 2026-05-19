@@ -1,0 +1,317 @@
+.auth-input,
+.auth-select,
+.auth-textarea{
+
+    width:100%;
+    min-width:0;
+
+    height:58px;
+
+    padding:0 18px;
+
+    border-radius:18px;
+
+    border:
+    1px solid rgba(255,255,255,0.08);
+
+    background:
+    rgba(255,255,255,0.04);
+
+    color:#ffffff;
+
+    font-size:15px;
+
+    transition:all .25s ease;
+
+    appearance:none;
+    -webkit-appearance:none;
+
+}
+
+.auth-grid{
+
+    display:grid;
+    grid-template-columns:repeat(
+        2,
+        minmax(0,1fr)
+    );
+
+    gap:18px;
+
+}
+
+.auth-textarea{
+
+    min-height:140px;
+
+    padding:18px;
+
+    resize:vertical;
+
+    line-height:1.6;
+
+}
+
+@media(max-width:768px){
+
+    .auth-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+
+
+
+/* =========================================
+   DARK FORM / AUTOFILL / SELECT FIXES
+========================================= */
+
+.auth-input,
+.auth-select,
+.auth-textarea{
+
+    background:rgba(12,16,32,0.92);
+
+    color:#ffffff;
+
+    border:
+    1px solid rgba(255,255,255,0.08);
+
+    appearance:none;
+
+}
+
+.auth-input::placeholder,
+.auth-textarea::placeholder {
+    color: rgba(255,255,255,0.45);
+}
+
+/* Autofill */
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0b1020 inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    border: 1px solid rgba(124, 58, 237, 0.7) !important;
+    transition: background-color 99999s ease-in-out 0s;
+}
+
+/* Select Dropdown */
+
+.auth-select {
+    cursor: pointer;
+}
+
+.auth-select option {
+    background: #0b1020;
+    color: #ffffff;
+}
+
+
+/* Focus */
+
+.auth-input:focus,
+.auth-select:focus,
+.auth-textarea:focus{
+
+    outline:none;
+
+    border-color:
+    rgba(124,58,237,0.8);
+
+    box-shadow:
+    0 0 0 3px rgba(124,58,237,0.15),
+    0 12px 30px rgba(0,0,0,0.35);
+
+}
+
+/* Validation */
+
+.auth-error {
+    color: #ff7b7b;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.auth-input.error,
+.auth-select.error,
+.auth-textarea.error {
+    border-color: rgba(255, 90, 90, 0.7);
+}
+
+/* Required mark */
+
+.required-mark {
+    color: #8b5cf6;
+    margin-left: 4px;
+}
+
+.password-field-wrapper{
+
+    position:relative;
+
+    width:100%;
+
+}
+
+.password-field-wrapper input{
+
+    width:100%;
+
+    padding-right:56px;
+
+}
+
+.password-toggle-btn{
+
+    position:absolute;
+
+    top:50%;
+
+    right:16px;
+
+    transform:translateY(-50%);
+
+    width:38px;
+
+    height:38px;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    color:rgba(255,255,255,0.55);
+
+    transition:all .25s ease;
+
+}
+
+.password-toggle-btn:hover{
+
+    color:#8b5cf6;
+
+}
+
+.password-toggle-btn svg{
+
+    width:18px;
+
+    height:18px;
+
+}
+
+
+/*
+=========================================
+DOB FIELD
+=========================================
+*/
+
+.dob-field-wrapper{
+
+    position:relative;
+
+    width:100%;
+
+}
+
+
+.dob-field-wrapper .form-input{
+
+    width:100% !important;
+
+    height:58px;
+
+    padding:0 56px 0 18px;
+
+    border-radius:18px;
+
+    border:
+    1px solid rgba(255,255,255,0.08);
+
+    background:
+    rgba(12,16,32,0.92) !important;
+
+    color:#ffffff !important;
+
+    font-size:15px;
+
+    appearance:none;
+
+    outline:none;
+
+    box-shadow:none;
+
+}
+
+#date_of_birth::placeholder{
+
+    color:
+    rgba(255,255,255,0.45);
+
+}
+
+
+.dob-calendar-btn{
+
+    position:absolute;
+
+    top:50%;
+
+    right:16px;
+
+    transform:translateY(-50%);
+
+    width:36px;
+
+    height:36px;
+
+    border:none;
+
+    background:transparent;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:rgba(255,255,255,0.55);
+
+    cursor:pointer;
+
+    transition:all .25s ease;
+
+}
+
+
+.dob-calendar-btn:hover{
+
+    color:#8b5cf6;
+
+}
+
+
+.dob-calendar-btn svg{
+
+    width:18px;
+
+    height:18px;
+
+}
