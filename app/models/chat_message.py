@@ -31,7 +31,7 @@ class ChatMessage(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now
     )
 
     is_read = db.Column(

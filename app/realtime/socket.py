@@ -65,6 +65,8 @@ def handle_send_message(data):
 
     db.session.commit()
 
+    from datetime import datetime
+
     payload = {
 
         "id":
@@ -80,7 +82,7 @@ def handle_send_message(data):
         message,
 
         "created_at":
-        new_message.created_at.strftime(
+        datetime.now().strftime(
             "%I:%M %p"
         )
     }
