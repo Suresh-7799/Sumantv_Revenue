@@ -1,14 +1,27 @@
-{% extends "layouts/dashboard_layout.html" %}
+{% extends "layouts/base.html" %}
 
 {% block page_title %}
 Profile
 {% endblock %}
 
-{% block page_css %}
+{% block extra_css %}
+{% block content %}
+
 <link
 rel="stylesheet"
 href="{{ url_for('static', filename='css/profile.css') }}">
+
 {% endblock %}
+
+<div class="app-shell">
+
+    {% include "components/sidebar.html" %}
+
+    <main class="app-main">
+
+        <section class="app-content">
+
+            <div class="page-container">
 
 {% block dashboard_content %}
 
@@ -21,6 +34,8 @@ class="toast-container"></div>
 
         <div
         class="profile-cover"
+
+        {% if current_user.banner_image %}
 
         style="
         background:
@@ -699,9 +714,19 @@ id="cropperModal">
     </div>
 
 </div>
+</div>
+
+</section>
+
+</main>
+
+</div>
 
 {% endblock %}
 
-{% block page_js %}
+{% block extra_js %}
+
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+
+{% endblock %}
 {% endblock %}

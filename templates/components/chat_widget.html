@@ -1,0 +1,112 @@
+<div class="chat-fab" id="chatFab">
+
+    <i data-lucide="message-circle"></i>
+
+</div>
+
+<div class="chat-drawer" id="chatDrawer">
+
+    <div class="chat-header">
+
+        <h3>
+            Team Chat
+        </h3>
+
+        <button id="closeChatDrawer">
+
+            <i data-lucide="x"></i>
+
+        </button>
+
+    </div>
+
+    <div class="chat-search-wrapper">
+
+        <input
+        type="text"
+        id="chatUserSearch"
+        placeholder="Search teammates...">
+
+    </div>
+
+    <div class="chat-users" id="chatUsers">
+
+        {% for user in users %}
+
+            <div
+            class="chat-user-item"
+
+            data-user-id="{{ user.id }}"
+
+            data-name="{{ user.display_name or user.username }}">
+
+                <div class="chat-user-avatar">
+
+                    {% if user.profile_image %}
+
+                        <img
+                        src="{{ user.profile_image }}">
+
+                    {% else %}
+
+                        {{ (user.display_name or user.username)[0] }}
+
+                    {% endif %}
+
+                </div>
+
+                <div class="chat-user-info">
+
+                    <strong>
+
+                        {{ user.display_name or user.username }}
+
+                    </strong>
+
+                    <span>
+
+                        {{ user.role.name if user.role else "Employee" }}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+    <div class="chat-conversation"
+    id="chatConversation"
+
+    style="display:none; z-index:30;">
+
+        <div class="chat-conversation-header">
+
+            <span id="activeChatUser"></span>
+
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+
+        </div>
+
+        <div class="chat-input-wrapper">
+
+            <input
+            type="text"
+            id="chatMessageInput"
+            placeholder="Type message...">
+
+            <button id="sendChatMessage">
+
+                <i data-lucide="send"></i>
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>

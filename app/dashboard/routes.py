@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime, date
 from PIL import Image
+from app.models.user import User
 
 from flask import (
     jsonify,
@@ -54,8 +55,20 @@ def index():
 @login_required
 def home():
 
+    users = User.query.filter(
+
+        User.role_id == current_user.role_id,
+
+        User.id != current_user.id
+
+    ).all()
+
     return render_template(
+
         "dashboard/dashboard.html",
+
+        users=users,
+
         active_page="overview"
     )
 
@@ -512,3 +525,73 @@ def update_profile():
     return redirect(
         url_for("dashboard.profile")
     )
+
+
+from flask import jsonify
+
+from flask_login import login_required
+
+from app.models.chat_message import (
+    ChatMessage
+)
+
+
+@dashboard_bp.route(
+    "/chat/messages/<int:user_id>"
+)
+
+@login_required
+
+def get_chat_messages(user_id):
+
+    messages = ChatMessage.query.filter(
+
+        (
+
+            (ChatMessage.sender_id == current_user.id)
+
+            &
+
+            (ChatMessage.receiver_id == user_id)
+
+        )
+
+        |
+
+        (
+
+            (ChatMessage.sender_id == user_id)
+
+            &
+
+            (ChatMessage.receiver_id == current_user.id)
+
+        )
+
+    ).order_by(
+
+        ChatMessage.created_at.asc()
+
+    ).all()
+
+    return jsonify([
+
+    {
+
+        "sender_id":
+        msg.sender_id,
+
+        "receiver_id":
+        msg.receiver_id,
+
+        "message":
+        msg.message,
+
+        "created_at":
+        msg.created_at.strftime(
+            "%I:%M %p"
+        )
+    }
+
+    for msg in messages
+])

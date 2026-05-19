@@ -157,6 +157,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+
+window.socket = io({
+
+    transports: ["websocket"],
+
+    upgrade: false
+});
+
+socket.on(
+
+    "connect",
+
+    ()=>{
+
+        socket.emit("join");
+    }
+);
+
+</script>
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/chat.css') }}">
+
+<script>
+
+const CURRENT_USER_ID =
+{{ current_user.id if current_user.is_authenticated else "null" }};
+
+</script>
+
+<script
+src="{{ url_for('static', filename='js/chat.js') }}">
+</script>
+
 </body>
 
 </html>

@@ -88,23 +88,20 @@ def format_dob(value):
 def create_app():
 
     app = Flask(
-
         __name__,
-
         template_folder="../templates",
-
         static_folder="../static"
     )
 
-    app.config.from_object(
-        DevelopmentConfig
-    )
+    app.config.from_object(DevelopmentConfig)
 
     initialize_extensions(app)
 
     configure_jinja(app)
 
     register_blueprints(app)
+
+    from app.realtime import socket
 
     configure_login_manager()
 

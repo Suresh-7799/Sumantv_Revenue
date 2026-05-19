@@ -721,7 +721,10 @@ td{
 
     background-repeat:no-repeat;
 
-    background:none;
+    background-color:
+    rgba(2,6,23,.08);
+
+    backdrop-filter:blur(2px);
 }
 
 .app-topbar::before{
@@ -733,12 +736,7 @@ td{
     inset:0;
 
     background:
-    linear-gradient(
-        90deg,
-        rgba(2,6,23,.42),
-        rgba(2,6,23,.18),
-        rgba(2,6,23,.42)
-    );
+    rgba(2,6,23,.12);
 
     z-index:0;
 
@@ -750,4 +748,45 @@ td{
     position:relative;
 
     z-index:2;
+}
+
+.topbar-icon-btn{
+
+    width:52px;
+
+    height:52px;
+
+    border:none;
+
+    border-radius:18px;
+
+    background:
+    rgba(8,12,28,.28);
+
+    backdrop-filter:blur(12px);
+
+    border:
+    1px solid rgba(255,255,255,.06);
+
+    box-shadow:
+
+    0 4px 18px rgba(0,0,0,.22),
+
+    0 0 12px rgba(0,0,0,.08);
+
+    transition:
+    all .25s ease;
+}
+
+.topbar-icon-btn:hover{
+
+    background:
+    rgba(91,92,246,.18);
+
+    box-shadow:
+
+    0 0 18px rgba(139,92,246,.18);
+
+    transform:
+    translateY(-2px);
 }
