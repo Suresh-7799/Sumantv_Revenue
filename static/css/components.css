@@ -260,7 +260,10 @@ td{
 ========================= */
 
 .profile-dropdown-wrapper{
+
     position:relative;
+
+    z-index:99999;
 }
 
 .profile-trigger{
@@ -331,6 +334,8 @@ td{
 
     position:absolute;
 
+    z-index:99999;
+
     top:115%;
 
     right:0;
@@ -359,8 +364,6 @@ td{
 
     box-shadow:
     0 24px 80px rgba(0,0,0,.42);
-
-    z-index:999;
 
     opacity:0;
 
@@ -710,7 +713,7 @@ td{
 
     position:relative;
 
-    overflow:hidden;
+    overflow:visible;
 
     background-size:cover;
 
@@ -718,7 +721,7 @@ td{
 
     background-repeat:no-repeat;
 
-    background:none
+    background:none;
 }
 
 .app-topbar::before{
@@ -729,9 +732,17 @@ td{
 
     inset:0;
 
-    display:none;
+    background:
+    linear-gradient(
+        90deg,
+        rgba(2,6,23,.42),
+        rgba(2,6,23,.18),
+        rgba(2,6,23,.42)
+    );
 
     z-index:0;
+
+    pointer-events:none;
 }
 
 .app-topbar > *{

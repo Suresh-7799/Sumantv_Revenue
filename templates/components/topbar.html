@@ -4,12 +4,9 @@ class="app-topbar"
 {% if current_user.banner_image %}
 
 style="
-background-image:
-linear-gradient(
-rgba(2,6,23,.82),
-rgba(2,6,23,.82)
-),
-url('{{ current_user.banner_image }}');
+background:
+url('{{ current_user.banner_image }}')
+center/cover no-repeat;
 "
 
 {% endif %}
