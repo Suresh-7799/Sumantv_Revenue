@@ -13,3 +13,4 @@ flask-socketio
 eventlet
 celery
 Flask-Limiter
+Pillow
