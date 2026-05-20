@@ -8,9 +8,25 @@ class Config:
 
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    database_url = os.getenv(
         "DATABASE_URL"
     )
+
+    if database_url:
+
+        database_url = database_url.replace(
+
+            "postgres://",
+
+            "postgresql://"
+        )
+
+        if "sslmode=" not in database_url:
+
+            database_url += "?sslmode=require"
+
+
+    SQLALCHEMY_DATABASE_URI = database_url
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

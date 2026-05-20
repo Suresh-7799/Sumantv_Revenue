@@ -102,6 +102,7 @@ def create_app():
     register_blueprints(app)
 
     from app.realtime import socket
+    from app.realtime import group_socket
 
     configure_login_manager()
 
@@ -125,14 +126,7 @@ def initialize_extensions(app):
 
     csrf.init_app(app)
 
-    socketio.init_app(
-
-        app,
-
-        cors_allowed_origins="*",
-
-        async_mode="threading"
-    )
+    socketio.init_app(app)
 
     limiter.init_app(app)
 

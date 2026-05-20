@@ -3,6 +3,33 @@ import time
 from datetime import datetime, date
 from PIL import Image
 from app.models.user import User
+from app.models.chat_group import ChatGroup
+from app.models.chat_group_member import ChatGroupMember
+
+from app.services.chat_service import (
+    save_chat_file
+)
+
+from app.models.chat_group import (
+    ChatGroup
+)
+
+from app.models.chat_group_member import (
+    ChatGroupMember
+)
+
+from app.models.chat_archive import (
+    ChatArchive
+)
+
+from app.models.chat_block import (
+    ChatBlock
+)
+
+from app.models.chat_message_visibility import (
+    ChatMessageVisibility
+)
+
 
 from flask import (
     jsonify,
@@ -12,6 +39,10 @@ from flask import (
     url_for,
     request,
     flash
+)
+
+from app.services.chat_service import (
+    save_chat_file
 )
 
 from flask_login import (
@@ -539,59 +570,225 @@ from app.models.chat_message import (
 @dashboard_bp.route(
     "/chat/messages/<int:user_id>"
 )
-
 @login_required
-
 def get_chat_messages(user_id):
 
     messages = ChatMessage.query.filter(
 
         (
-
             (ChatMessage.sender_id == current_user.id)
-
             &
-
             (ChatMessage.receiver_id == user_id)
-
         )
 
         |
 
         (
-
             (ChatMessage.sender_id == user_id)
-
             &
-
             (ChatMessage.receiver_id == current_user.id)
-
         )
 
     ).order_by(
-
         ChatMessage.created_at.asc()
-
     ).all()
 
-    return jsonify([
+    result = []
 
-    {
+    for msg in messages:
 
-        "sender_id":
-        msg.sender_id,
+        created = msg.created_at
 
-        "receiver_id":
-        msg.receiver_id,
+        if created.date() == datetime.utcnow().date():
 
-        "message":
-        msg.message,
+            formatted = created.strftime(
+                "%I:%M %p"
+            )
 
-        "created_at":
-        msg.created_at.strftime(
-            "%I:%M %p"
+        else:
+
+            formatted = created.strftime(
+                "%d %b %Y"
+            )
+
+        result.append({
+
+            "id": msg.id,
+
+            "sender_id": msg.sender_id,
+
+            "receiver_id": msg.receiver_id,
+
+            "message": msg.message,
+
+            "file_url": msg.file_url,
+
+            "file_name": msg.file_name,
+
+            "file_type": msg.file_type,
+
+            "deleted": msg.deleted,
+
+            "created_at": formatted
+        })
+
+    return jsonify(result)
+
+
+@dashboard_bp.route(
+    "/chat/group/create",
+    methods=["POST"]
+)
+@login_required
+def create_group():
+
+    data = request.json
+
+    name = (
+        data.get("name") or ""
+    ).strip()
+
+    members = data.get(
+        "members",
+        []
+    )
+
+    if not name:
+
+        return jsonify({
+            "success": False
+        })
+
+    group = ChatGroup(
+
+        name=name,
+
+        created_by=current_user.id
+    )
+
+    db.session.add(group)
+
+    db.session.flush()
+
+    creator = ChatGroupMember(
+
+        group_id=group.id,
+
+        user_id=current_user.id
+    )
+
+    db.session.add(creator)
+
+    for user_id in members:
+
+        existing = ChatGroupMember.query.filter_by(
+
+            group_id=group.id,
+
+            user_id=user_id
+
+        ).first()
+
+        if existing:
+
+            continue
+
+        member = ChatGroupMember(
+
+            group_id=group.id,
+
+            user_id=user_id
         )
-    }
 
-    for msg in messages
-])
+        db.session.add(member)
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True,
+
+        "group_id": group.id
+    })
+
+
+@dashboard_bp.route(
+    "/chat/archive",
+    methods=["POST"]
+)
+@login_required
+def archive_chat():
+
+    data = request.json
+
+    conversation_id = data.get(
+        "conversation_id"
+    )
+
+    existing = ChatArchive.query.filter_by(
+
+        user_id=current_user.id,
+
+        conversation_id=conversation_id
+
+    ).first()
+
+    if existing:
+
+        return jsonify({
+            "success": True
+        })
+
+    archive = ChatArchive(
+
+        user_id=current_user.id,
+
+        conversation_id=conversation_id
+    )
+
+    db.session.add(archive)
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True
+    })
+
+
+@dashboard_bp.route(
+    "/chat/user/<int:user_id>"
+)
+@login_required
+def chat_user_profile(user_id):
+
+    user = User.query.get_or_404(
+        user_id
+    )
+
+    return jsonify({
+
+        "full_name":
+        user.display_name,
+
+        "first_name":
+        user.first_name,
+
+        "last_name":
+        user.last_name,
+
+        "email":
+        user.email,
+
+        "employee_id":
+        user.employee_id,
+
+        "role":
+        user.role.name if user.role else "",
+
+        "profile_image":
+        user.profile_image,
+
+        "banner":
+        user.banner_image
+    })
+

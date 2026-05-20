@@ -1,149 +1,253 @@
 from datetime import datetime
 
+from app.models.chat_block import ChatBlock
+
 from flask_socketio import (
-
     emit,
-
-    join_room
+    join_room,
+    leave_room
 )
 
-from flask_login import (
-
-    current_user
-)
+from flask_login import current_user
 
 from app.extensions import (
-
     socketio,
-
     db
 )
 
 from app.models.chat_message import (
-
     ChatMessage
 )
 
 
-@socketio.on("connect")
+def build_room(user1, user2):
 
+    ids = sorted([user1, user2])
+
+    return f"chat_{ids[0]}_{ids[1]}"
+
+
+def format_timestamp(dt):
+
+    now = datetime.utcnow()
+
+    if dt.date() == now.date():
+
+        return dt.strftime("%I:%M %p")
+
+    return dt.strftime("%d %b %Y")
+
+
+@socketio.on("connect")
 def handle_connect():
 
-    print("SOCKET CONNECTED")
-
     if not current_user.is_authenticated:
-
-        print("USER NOT AUTHENTICATED")
-
         return False
 
-    print(f"CONNECTED USER: {current_user.id}")
+    join_room(f"user_{current_user.id}")
 
 
-@socketio.on("join")
+@socketio.on("join_chat")
+def join_chat(data):
 
-def handle_join():
+    receiver_id = int(data["receiver_id"])
 
-    if not current_user.is_authenticated:
-
-        print("JOIN FAILED")
-
-        return
-
-    room = str(current_user.id)
+    room = build_room(
+        current_user.id,
+        receiver_id
+    )
 
     join_room(room)
 
-    print(f"JOINED ROOM: {room}")
+    emit(
+        "joined_chat",
+        {
+            "room": room
+        }
+    )
+
+
+@socketio.on("leave_chat")
+def leave_chat(data):
+
+    receiver_id = int(data["receiver_id"])
+
+    room = build_room(
+        current_user.id,
+        receiver_id
+    )
+
+    leave_room(room)
 
 
 @socketio.on("send_message")
-
 def handle_send_message(data):
-
-    print("SEND EVENT HIT")
-
-    print(data)
-
-    if not current_user.is_authenticated:
-
-        print("USER AUTH FAILED")
-
-        return
 
     receiver_id = int(
         data["receiver_id"]
     )
 
-    message = data["message"].strip()
+    blocked = ChatBlock.query.filter(
 
-    if not message:
+        (
+            (ChatBlock.blocker_id == current_user.id)
+            &
+            (ChatBlock.blocked_id == receiver_id)
+        )
+
+        |
+
+        (
+            (ChatBlock.blocker_id == receiver_id)
+            &
+            (ChatBlock.blocked_id == current_user.id)
+        )
+
+    ).first()
+
+    if blocked:
+
+        emit(
+            "chat_error",
+            {
+                "message":
+                "User unavailable"
+            }
+        )
 
         return
 
-    try:
+    message = (
+        data.get("message") or ""
+    ).strip()
 
-        new_message = ChatMessage(
+    file_data = data.get("file")
 
-            sender_id=current_user.id,
+    if not message and not file_data:
+        return
 
-            receiver_id=receiver_id,
+    new_message = ChatMessage(
+        sender_id=current_user.id,
+        receiver_id=receiver_id,
+        message=message,
+        file_url=file_data.get("url") if file_data else None,
+        file_name=file_data.get("name") if file_data else None,
+        file_type=file_data.get("type") if file_data else None
+    )
 
-            message=message,
+    db.session.add(new_message)
 
-            created_at=datetime.now()
+    db.session.commit()
+
+    payload = {
+        "id": new_message.id,
+        "sender_id": current_user.id,
+        "receiver_id": receiver_id,
+        "message": new_message.message,
+        "file_url": new_message.file_url,
+        "file_name": new_message.file_name,
+        "file_type": new_message.file_type,
+        "created_at":
+        format_timestamp(
+            new_message.created_at
+        )
+    }
+
+    room = build_room(
+        current_user.id,
+        receiver_id
+    )
+
+    emit(
+        "receive_message",
+        payload,
+        room=room
+    )
+
+
+@socketio.on("delete_message")
+def delete_message(data):
+
+    message_id = int(data["message_id"])
+
+    message = ChatMessage.query.get(
+        message_id
+    )
+
+    if not message:
+        return
+
+    if message.sender_id != current_user.id:
+        return
+
+    message.deleted = True
+
+    db.session.commit()
+
+    room = build_room(
+        message.sender_id,
+        message.receiver_id
+    )
+
+    emit(
+        "message_deleted",
+        {
+            "message_id": message_id
+        },
+        room=room
+    )
+
+
+@socketio.on("clear_chat")
+def clear_chat(data):
+
+    receiver_id = int(
+        data["receiver_id"]
+    )
+
+    messages = ChatMessage.query.filter(
+
+        (
+            (ChatMessage.sender_id == current_user.id)
+            &
+            (ChatMessage.receiver_id == receiver_id)
         )
 
-        db.session.add(
-            new_message
+        |
+
+        (
+            (ChatMessage.sender_id == receiver_id)
+            &
+            (ChatMessage.receiver_id == current_user.id)
         )
 
-        db.session.commit()
+    ).all()
 
-        print("MESSAGE SAVED")
+    for msg in messages:
 
-        payload = {
+        exists = ChatMessageVisibility.query.filter_by(
 
-            "id":
-            new_message.id,
+            message_id=msg.id,
 
-            "sender_id":
-            current_user.id,
+            hidden_for_user_id=current_user.id
 
-            "receiver_id":
-            receiver_id,
+        ).first()
 
-            "message":
-            message,
+        if exists:
 
-            "created_at":
-            new_message.created_at.strftime(
-                "%I:%M %p"
-            )
-        }
+            continue
 
-        emit(
+        hidden = ChatMessageVisibility(
 
-            "receive_message",
+            message_id=msg.id,
 
-            payload,
-
-            room=str(receiver_id)
+            hidden_for_user_id=current_user.id
         )
 
-        emit(
+        db.session.add(hidden)
 
-            "receive_message",
+    db.session.commit()
 
-            payload,
-
-            room=str(current_user.id)
-        )
-
-        print("MESSAGE EMITTED")
-
-    except Exception as e:
-
-        print("CHAT ERROR:", str(e))
-
-        db.session.rollback()
+    emit(
+        "chat_cleared"
+    )

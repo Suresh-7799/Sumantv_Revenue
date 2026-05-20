@@ -1,5 +1,12 @@
 const socket = window.socket;
 
+const csrfToken = document
+.querySelector(
+    'meta[name="csrf-token"]'
+)
+?.getAttribute("content");
+
+
 const chatFab =
 document.getElementById("chatFab");
 
@@ -27,11 +34,19 @@ document.getElementById("chatMessageInput");
 const chatUserSearch =
 document.getElementById("chatUserSearch");
 
+const attachChatFile =
+document.getElementById("attachChatFile");
+
+const chatFileInput =
+document.getElementById("chatFileInput");
+
 let activeReceiverId = null;
+
+let uploadedFile = null;
 
 
 /* =========================
-   SOCKET DEBUG
+   SOCKET CONNECT
 ========================= */
 
 socket.on("connect", ()=>{
@@ -41,15 +56,16 @@ socket.on("connect", ()=>{
         socket.id
     );
 
-    socket.emit("join");
-});
+    if(activeReceiverId){
 
-socket.on("connect_error", (err)=>{
-
-    console.error(
-        "SOCKET ERROR:",
-        err
-    );
+        socket.emit(
+            "join_chat",
+            {
+                receiver_id:
+                activeReceiverId
+            }
+        );
+    }
 });
 
 
@@ -162,6 +178,14 @@ document.addEventListener(
         chatConversation.style.display =
         "flex";
 
+        socket.emit(
+            "join_chat",
+            {
+                receiver_id:
+                activeReceiverId
+            }
+        );
+
         await loadMessages();
     }
 );
@@ -209,6 +233,117 @@ async function loadMessages(){
 
 
 /* =========================
+   FILE ATTACH
+========================= */
+
+attachChatFile?.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        chatFileInput.click();
+    }
+);
+
+
+chatFileInput?.addEventListener(
+
+    "change",
+
+    async ()=>{
+
+        const file =
+        chatFileInput.files[0];
+
+        if(!file){
+
+            return;
+        }
+
+        const formData =
+        new FormData();
+
+        formData.append(
+            "file",
+            file
+        );
+
+        try{
+
+            const response =
+            await fetch(
+
+                "/chat/upload",
+
+                {
+                    method:"POST",
+                    headers:{
+
+                        "X-CSRFToken":
+                        csrfToken
+                },
+
+                    body:formData
+                }
+            );
+
+            const data =
+            await response.json();
+
+            if(!data.success){
+
+                alert(
+                    data.message ||
+                    "Upload failed"
+                );
+
+                return;
+            }
+
+            uploadedFile =
+            data.file;
+
+            console.log(
+                "FILE READY:",
+                uploadedFile
+            );
+        }
+
+        catch(error){
+
+            console.error(error);
+
+            alert(
+                "Upload failed"
+            );
+        }
+    }
+);
+
+
+fetch(
+
+    "/chat/archive",
+
+    {
+
+        method:"POST",
+
+        headers:{
+
+            "Content-Type":
+            "application/json",
+
+            "X-CSRFToken":
+            csrfToken
+        },
+
+        body:JSON.stringify(data)
+    }
+)
+
+/* =========================
    SEND MESSAGE
 ========================= */
 
@@ -220,18 +355,20 @@ function sendMessage(){
 
     if(
 
-        !message ||
+        !message
 
-        !activeReceiverId
+        &&
+
+        !uploadedFile
     ){
 
         return;
     }
 
-    console.log(
-        "SENDING:",
-        message
-    );
+    if(!activeReceiverId){
+
+        return;
+    }
 
     socket.emit(
 
@@ -243,11 +380,18 @@ function sendMessage(){
             activeReceiverId,
 
             message:
-            message
+            message,
+
+            file:
+            uploadedFile
         }
     );
 
     chatMessageInput.value = "";
+
+    uploadedFile = null;
+
+    chatFileInput.value = "";
 }
 
 
@@ -285,32 +429,67 @@ socket.on(
 
     (data)=>{
 
-        console.log(
-            "RECEIVED:",
-            data
-        );
-
-        const senderId =
-        Number(data.sender_id);
-
-        const receiverId =
-        Number(data.receiver_id);
-
         if(
 
-            senderId !== activeReceiverId
+            Number(data.sender_id)
+
+            !==
+
+            activeReceiverId
 
             &&
 
-            receiverId !== activeReceiverId
+            Number(data.receiver_id)
+
+            !==
+
+            activeReceiverId
         ){
 
             return;
         }
 
         appendMessage(data);
+    }
+);
 
-        scrollMessages();
+
+/* =========================
+   DELETE MESSAGE
+========================= */
+
+socket.on(
+
+    "message_deleted",
+
+    (data)=>{
+
+        const element =
+
+        document.querySelector(
+
+            `[data-message-id="${data.message_id}"]`
+        );
+
+        if(element){
+
+            element.remove();
+        }
+    }
+);
+
+
+/* =========================
+   CLEAR CHAT
+========================= */
+
+socket.on(
+
+    "chat_cleared",
+
+    ()=>{
+
+        chatMessages.innerHTML = "";
     }
 );
 
@@ -321,14 +500,24 @@ socket.on(
 
 function appendMessage(data){
 
-    const exists =
+    if(!data){
+
+        return;
+    }
+
+    if(data.deleted){
+
+        return;
+    }
+
+    const existing =
 
     document.querySelector(
 
         `[data-message-id="${data.id}"]`
     );
 
-    if(exists){
+    if(existing){
 
         return;
     }
@@ -336,38 +525,288 @@ function appendMessage(data){
     const div =
     document.createElement("div");
 
-    div.dataset.messageId =
-    data.id;
-
-    const isMine =
+    div.className =
 
         Number(data.sender_id)
 
         ===
 
-        Number(CURRENT_USER_ID);
-
-    div.className =
-
-        isMine
+        Number(CURRENT_USER_ID)
 
         ? "chat-message me"
 
         : "chat-message other";
 
-    div.innerHTML = `
+    div.dataset.messageId =
+    data.id;
 
-        <div class="chat-message-text">
-            ${escapeHtml(data.message)}
+    let fileHtml = "";
+
+    if(data.file_url){
+
+        const extension =
+
+        (
+            data.file_type || ""
+        ).toLowerCase();
+
+        const imageExtensions = [
+
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "webp"
+        ];
+
+        if(
+
+            imageExtensions.includes(
+                extension
+            )
+        ){
+
+            fileHtml = `
+
+                <img
+                src="${data.file_url}"
+                class="chat-image-preview">
+            `;
+        }
+
+        else{
+
+            fileHtml = `
+
+                <a
+                href="${data.file_url}"
+                target="_blank"
+                class="chat-file-link">
+
+                    📎 ${escapeHtml(data.file_name)}
+
+                </a>
+            `;
+        }
+    }
+
+    const actionsMenu =
+
+        Number(data.sender_id)
+
+        ===
+
+        Number(CURRENT_USER_ID)
+
+        ?
+
+        `
+
+        <div class="chat-message-actions">
+
+            <button
+            class="chat-message-menu-btn">
+
+                <i data-lucide="chevron-down"></i>
+
+            </button>
+
+            <div class="chat-message-dropdown">
+
+                <button
+                onclick="copyMessage('${escapeHtml(data.message || "")}')">
+
+                    Copy Message
+
+                </button>
+
+                <button
+                onclick="deleteMessage(${data.id})">
+
+                    Delete Message
+
+                </button>
+
+                <button>
+
+                    Forward
+
+                </button>
+
+            </div>
+
         </div>
 
-        <div class="chat-message-time">
-            ${data.created_at}
+        `
+
+        :
+
+        "";
+
+    div.innerHTML = `
+
+        <div class="chat-message-bubble">
+
+            ${actionsMenu}
+
+            ${fileHtml}
+
+            <div class="chat-message-text">
+
+                ${escapeHtml(data.message || "")}
+
+            </div>
+
+            <div class="chat-message-footer">
+
+                <div class="chat-message-time">
+
+                    ${data.created_at}
+
+                </div>
+
+            </div>
+
         </div>
     `;
 
     chatMessages.appendChild(div);
+
+    if(window.lucide){
+
+        lucide.createIcons();
+    }
+
+    scrollMessages();
 }
+
+/* =========================
+   MESSAGE DROPDOWN
+========================= */
+
+document.addEventListener(
+
+    "click",
+
+    (e)=>{
+
+        const btn = e.target.closest(
+            ".chat-message-menu-btn"
+        );
+
+        document
+        .querySelectorAll(
+            ".chat-message-dropdown"
+        )
+        .forEach(drop=>{
+
+            if(
+
+                !drop.contains(e.target)
+            ){
+
+                drop.classList.remove(
+                    "active"
+                );
+            }
+        });
+
+        if(!btn){
+
+            return;
+        }
+
+        e.stopPropagation();
+
+        const dropdown =
+
+        btn.parentElement.querySelector(
+            ".chat-message-dropdown"
+        );
+
+        dropdown.classList.toggle(
+            "active"
+        );
+    }
+);
+
+
+/* =========================
+   COPY MESSAGE
+========================= */
+
+window.copyMessage = function(message){
+
+    navigator.clipboard.writeText(
+        message
+    );
+};
+
+
+/* =========================
+   BACK BUTTON
+========================= */
+
+document.getElementById(
+    "backToUsers"
+)?.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        chatConversation.style.display =
+        "none";
+    }
+);
+
+/* =========================
+   DELETE MESSAGE
+========================= */
+
+window.deleteMessage = function(id){
+
+    socket.emit(
+
+        "delete_message",
+
+        {
+            message_id:id
+        }
+    );
+};
+
+
+/* =========================
+   CLEAR CHAT FUNCTION
+========================= */
+
+window.clearCurrentChat = function(){
+
+    if(!activeReceiverId){
+
+        return;
+    }
+
+    const confirmed = confirm(
+        "Clear this conversation?"
+    );
+
+    if(!confirmed){
+
+        return;
+    }
+
+    socket.emit(
+
+        "clear_chat",
+
+        {
+            receiver_id:
+            activeReceiverId
+        }
+    );
+};
 
 
 /* =========================
@@ -391,6 +830,143 @@ function escapeHtml(text){
 
 function scrollMessages(){
 
-    chatMessages.scrollTop =
-    chatMessages.scrollHeight;
+    requestAnimationFrame(()=>{
+
+        chatMessages.scrollTop =
+        chatMessages.scrollHeight;
+    });
 }
+
+
+/* =========================
+   CHAT MENU
+========================= */
+
+const chatMenuBtn =
+document.getElementById(
+    "chatMenuBtn"
+);
+
+const chatMenuDropdown =
+document.getElementById(
+    "chatMenuDropdown"
+);
+
+chatMenuBtn?.addEventListener(
+
+    "click",
+
+    (e)=>{
+
+        e.stopPropagation();
+
+        chatMenuDropdown.classList.toggle(
+            "active"
+        );
+    }
+);
+
+document.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        chatMenuDropdown?.classList.remove(
+            "active"
+        );
+
+        document
+        .querySelectorAll(
+            ".chat-message-dropdown"
+        )
+        .forEach(drop=>{
+
+            drop.classList.remove(
+                "active"
+            );
+        });
+    }
+);
+
+
+const viewProfileBtn =
+document.getElementById(
+    "viewProfileBtn"
+);
+
+viewProfileBtn?.addEventListener(
+
+    "click",
+
+    async ()=>{
+
+        const response = await fetch(
+
+            `/chat/user/${activeReceiverId}`
+        );
+
+        const user =
+        await response.json();
+
+        document.getElementById(
+            "chatProfileModal"
+        ).classList.add("active");
+
+        document.getElementById(
+            "chatProfileAvatar"
+        ).src =
+        user.profile_image || "";
+
+        document.getElementById(
+            "chatProfileBanner"
+        ).src =
+        user.banner || "";
+
+        document.getElementById(
+            "chatProfileFullName"
+        ).innerText =
+        user.full_name || "";
+
+        document.getElementById(
+            "chatProfileFirstName"
+        ).innerText =
+        user.first_name || "";
+
+        document.getElementById(
+            "chatProfileLastName"
+        ).innerText =
+        user.last_name || "";
+
+        document.getElementById(
+            "chatProfileEmail"
+        ).innerText =
+        user.email || "";
+
+        document.getElementById(
+            "chatProfileEmployeeId"
+        ).innerText =
+        user.employee_id || "";
+
+        document.getElementById(
+            "chatProfileRole"
+        ).innerText =
+        user.role || "";
+    }
+);
+
+document.getElementById(
+    "closeChatProfile"
+)?.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        document.getElementById(
+            "chatProfileModal"
+        ).classList.remove(
+            "active"
+        );
+    }
+);

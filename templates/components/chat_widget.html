@@ -45,7 +45,8 @@
                     {% if user.profile_image %}
 
                         <img
-                        src="{{ user.profile_image }}">
+                        src="{{ user.profile_image }}"
+                        alt="User Avatar">
 
                     {% else %}
 
@@ -77,14 +78,84 @@
 
     </div>
 
-    <div class="chat-conversation"
+    <div
+    class="chat-conversation"
     id="chatConversation"
-
     style="display:none; z-index:30;">
 
         <div class="chat-conversation-header">
 
-            <span id="activeChatUser"></span>
+            <div class="chat-header-left">
+
+                <button id="backToUsers">
+
+                    <i data-lucide="arrow-left"></i>
+
+                </button>
+
+                <div class="chat-active-user">
+
+                    <img
+                    id="activeChatAvatar"
+                    src="/static/images/default-avatar.png"
+                    alt="Active User">
+
+                    <div>
+
+                        <strong id="activeChatUser">
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="chat-header-right">
+
+                <button id="chatMenuBtn">
+
+                    <i data-lucide="more-vertical"></i>
+
+                </button>
+
+                <div
+                class="chat-menu-dropdown"
+                id="chatMenuDropdown">
+
+                    <button id="viewProfileBtn">
+
+                        View Profile
+
+                    </button>
+
+                    <button id="addToGroupBtn">
+
+                        Add To Group
+
+                    </button>
+
+                    <button id="clearChatBtn">
+
+                        Clear Chat
+
+                    </button>
+
+                    <button id="archiveChatBtn">
+
+                        Archive Chat
+
+                    </button>
+
+                    <button id="blockUserBtn">
+
+                        Block User
+
+                    </button>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -93,6 +164,32 @@
         </div>
 
         <div class="chat-input-wrapper">
+
+            <input
+            type="file"
+            id="chatFileInput"
+            hidden
+
+            accept="
+            image/*,
+            video/*,
+            application/pdf,
+            application/msword,
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document,
+            application/vnd.ms-excel,
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,
+            application/zip,
+            application/x-rar-compressed,
+            text/plain
+            ">
+
+            <button
+            type="button"
+            id="attachChatFile">
+
+                <i data-lucide="paperclip"></i>
+
+            </button>
 
             <input
             type="text"

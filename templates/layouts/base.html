@@ -80,6 +80,11 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
 
+    <meta
+    name="csrf-token"
+    content="{{ csrf_token() }}">
+
+
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
@@ -184,6 +189,8 @@ const CURRENT_USER_ID =
 <script
 src="{{ url_for('static', filename='js/chat.js') }}">
 </script>
+
+{% include "includes/chat_profile_modal.html" %}
 
 </body>
 
