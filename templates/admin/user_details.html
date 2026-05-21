@@ -42,7 +42,7 @@ href="{{ url_for('static', filename='css/admin.css') }}">
 
                 {% else %}
 
-                {{ (current_user.display_name or current_user.first_name or current_user.username)[0] | upper }}
+                {{ (user.display_name or current_user.first_name or current_user.username)[0] | upper }}
 
                 {% endif %}
 

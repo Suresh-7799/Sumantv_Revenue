@@ -5,13 +5,10 @@ Profile
 {% endblock %}
 
 {% block extra_css %}
-{% block content %}
-
-<link
-rel="stylesheet"
-href="{{ url_for('static', filename='css/profile.css') }}">
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
+
+{% block content %}
 
 <div class="app-shell">
 
@@ -23,7 +20,6 @@ href="{{ url_for('static', filename='css/profile.css') }}">
 
             <div class="page-container">
 
-{% block dashboard_content %}
 
 <section class="profile-page">
 <div
@@ -36,14 +32,12 @@ class="toast-container"></div>
         class="profile-cover"
 
         {% if current_user.banner_image %}
-
         style="
         background:
         url('{{ current_user.banner_image }}')
         center/cover no-repeat;
         "
-        {% endif %}
-        ">
+        {% endif %}>
 
             <button
             type="button"
@@ -72,7 +66,7 @@ class="toast-container"></div>
 
                     <img
                     id="mainProfileAvatar"
-                    src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+                    src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='default-avatar.png') }}{% endif %}"
                     alt="Profile">
 
                     <button
@@ -103,7 +97,7 @@ class="toast-container"></div>
                     <input
                     type="hidden"
                     id="bannerUploadUrl"
-                    value="{{ url_for('dashboard.upload_banner') }}">
+                    value="{{ url_for('dashboard.upload_banner_image') }}">
 
                 </div>
 
@@ -133,7 +127,7 @@ class="toast-container"></div>
 
                         <img
                         id="currentPreviewImage"
-                        src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+                        src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='default-avatar.png') }}{% endif %}"
                         alt="Current DP">
 
                     </div>
@@ -341,15 +335,19 @@ class="crop-status">
 <!-- PROFILE MODAL -->
 
 <div
-id="profileModal"
-class="profile-modal">
+    class="profile-modal"
+    id="profileModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="profileModalTitle"
+>
 
     <div class="profile-modal-content">
     <div class="profile-modal-body">
 
         <div class="profile-modal-header">
 
-            <h2>
+            <h2 id="profileModalTitle">
                 Edit Profile
             </h2>
 
@@ -728,5 +726,4 @@ id="cropperModal">
 
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 
-{% endblock %}
 {% endblock %}

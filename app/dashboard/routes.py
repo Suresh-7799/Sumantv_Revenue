@@ -1,13 +1,46 @@
 import os
 import time
-from datetime import datetime, date
-from PIL import Image
-from app.models.user import User
-from app.models.chat_group import ChatGroup
-from app.models.chat_group_member import ChatGroupMember
+from datetime import datetime
 
-from app.services.chat_service import (
-    save_chat_file
+from PIL import Image
+
+from flask import (
+
+    jsonify,
+    current_app,
+    render_template,
+    redirect,
+    url_for,
+    request,
+    flash
+)
+
+from flask_login import (
+
+    login_required,
+    current_user
+)
+
+from werkzeug.utils import (
+    secure_filename
+)
+
+from app.dashboard import (
+    dashboard_bp
+)
+
+from app.extensions import (
+
+    db,
+    limiter
+)
+
+from app.models.user import (
+    User
+)
+
+from app.models.chat_message import (
+    ChatMessage
 )
 
 from app.models.chat_group import (
@@ -30,43 +63,30 @@ from app.models.chat_message_visibility import (
     ChatMessageVisibility
 )
 
-
-from flask import (
-    jsonify,
-    current_app,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash
-)
-
 from app.services.chat_service import (
     save_chat_file
 )
 
-from flask_login import (
-    login_required,
-    current_user
-)
 
-from werkzeug.utils import secure_filename
-
-from app.dashboard import dashboard_bp
-
-from app.extensions import (
-    db,
-    limiter
-)
+# =========================
+# CONFIG
+# =========================
 
 ALLOWED_IMAGE_TYPES = {
+
     "image/jpeg",
+
     "image/png",
+
     "image/webp"
 }
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
+
+# =========================
+# INDEX
+# =========================
 
 @dashboard_bp.route("/")
 def index():
@@ -81,6 +101,10 @@ def index():
         url_for("auth.login")
     )
 
+
+# =========================
+# DASHBOARD
+# =========================
 
 @dashboard_bp.route("/dashboard")
 @login_required
@@ -104,28 +128,46 @@ def home():
     )
 
 
+# =========================
+# PROFILE
+# =========================
+
 @dashboard_bp.route("/profile")
 @login_required
 def profile():
 
     return render_template(
+
         "profile/profile.html",
+
         active_page="profile"
     )
 
+
+# =========================
+# SETTINGS
+# =========================
 
 @dashboard_bp.route("/settings")
 @login_required
 def settings():
 
     return render_template(
+
         "profile/settings.html",
+
         active_page="settings"
     )
 
 
+# =========================
+# PROFILE IMAGE UPLOAD
+# =========================
+
 @dashboard_bp.route(
+
     "/profile/upload-image",
+
     methods=["POST"]
 )
 @limiter.limit("10/minute")
@@ -140,7 +182,8 @@ def upload_profile_image():
 
                 "success": False,
 
-                "message": "No image uploaded"
+                "message":
+                "No image uploaded"
             }), 400
 
         file = request.files["profile_image"]
@@ -151,7 +194,8 @@ def upload_profile_image():
 
                 "success": False,
 
-                "message": "Invalid image"
+                "message":
+                "Invalid image"
             }), 400
 
         if file.mimetype not in ALLOWED_IMAGE_TYPES:
@@ -160,7 +204,8 @@ def upload_profile_image():
 
                 "success": False,
 
-                "message": "Unsupported image type"
+                "message":
+                "Unsupported image type"
             }), 400
 
         file.seek(0, os.SEEK_END)
@@ -175,7 +220,8 @@ def upload_profile_image():
 
                 "success": False,
 
-                "message": "Image too large"
+                "message":
+                "Image too large"
             }), 400
 
         timestamp = int(time.time())
@@ -290,177 +336,9 @@ def upload_profile_image():
             str(error)
         }), 500
 
-
-@dashboard_bp.route(
-
-    "/upload-banner",
-
-    methods=["POST"]
-)
-@limiter.limit("10/minute")
-@login_required
-def upload_banner():
-
-    try:
-
-        if "banner" not in request.files:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                "No banner uploaded"
-            }), 400
-
-        file = request.files["banner"]
-
-        if not file:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                "Invalid banner image"
-            }), 400
-
-        if file.mimetype not in ALLOWED_IMAGE_TYPES:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                "Unsupported image type"
-            }), 400
-
-        file.seek(0, os.SEEK_END)
-
-        file_size = file.tell()
-
-        file.seek(0)
-
-        if file_size > MAX_IMAGE_SIZE:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                "Banner image too large"
-            }), 400
-
-        timestamp = int(time.time())
-
-        user_folder = os.path.join(
-
-            current_app.static_folder,
-
-            "uploads",
-
-            "banners",
-
-            str(current_user.id)
-        )
-
-        os.makedirs(
-
-            user_folder,
-
-            exist_ok=True
-        )
-
-        filename = secure_filename(
-
-            f"banner_v{timestamp}.webp"
-        )
-
-        absolute_file_path = os.path.join(
-
-            user_folder,
-
-            filename
-        )
-
-        image = Image.open(file)
-
-        image = image.convert("RGB")
-
-        image.thumbnail(
-            (1800, 700)
-        )
-
-        image.save(
-
-            absolute_file_path,
-
-            "WEBP",
-
-            quality=92,
-
-            method=6
-        )
-
-        old_banner = current_user.banner_image
-
-        current_user.banner_image = (
-
-            f"/static/uploads/banners/"
-            f"{current_user.id}/"
-            f"{filename}"
-        )
-
-        db.session.commit()
-
-        # REMOVE OLD BANNER
-
-        if old_banner:
-
-            try:
-
-                old_absolute_path = os.path.join(
-
-                    current_app.root_path,
-
-                    old_banner.lstrip("/")
-                )
-
-                if os.path.exists(
-                    old_absolute_path
-                ):
-
-                    os.remove(
-                        old_absolute_path
-                    )
-
-            except Exception:
-
-                pass
-
-        return jsonify({
-
-            "success": True,
-
-            "banner_url":
-            current_user.banner_image,
-
-            "message":
-            "Banner updated successfully"
-        })
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        return jsonify({
-
-            "success": False,
-
-            "message":
-            str(error)
-        }), 500
-
+# =========================
+# PROFILE UPDATE
+# =========================
 
 @dashboard_bp.route(
     "/profile/update",
@@ -493,20 +371,18 @@ def update_profile():
     for field in allowed_fields:
 
         value = request.form.get(
-           field,
+            field,
             ""
         ).strip()
 
-    if field == "date_of_birth":
+        if field == "date_of_birth":
 
-        if value:
-
-            try:
+            if value:
 
                 parsed = None
 
                 formats = [
-                
+
                     "%Y-%m-%d",
 
                     "%d/%m/%Y"
@@ -529,27 +405,25 @@ def update_profile():
 
                 value = parsed
 
-            except ValueError:
+            else:
 
                 value = None
 
-        else:
+        setattr(
 
-            value = None
+            current_user,
 
-    setattr(
+            field,
 
-        current_user,
-
-        field,
-
-        value
-    )
+            value
+        )
 
     db.session.commit()
 
     flash(
+
         "Profile updated successfully",
+
         "success"
     )
 
@@ -558,14 +432,9 @@ def update_profile():
     )
 
 
-from flask import jsonify
-
-from flask_login import login_required
-
-from app.models.chat_message import (
-    ChatMessage
-)
-
+# =========================
+# CHAT MESSAGES
+# =========================
 
 @dashboard_bp.route(
     "/chat/messages/<int:user_id>"
@@ -573,67 +442,141 @@ from app.models.chat_message import (
 @login_required
 def get_chat_messages(user_id):
 
+
     messages = ChatMessage.query.filter(
 
-        (
-            (ChatMessage.sender_id == current_user.id)
-            &
-            (ChatMessage.receiver_id == user_id)
-        )
+        ChatMessage.deleted == False,
 
-        |
+        ~ChatMessage.id.in_(hidden_ids),
 
         (
-            (ChatMessage.sender_id == user_id)
-            &
-            (ChatMessage.receiver_id == current_user.id)
+
+            (
+                (ChatMessage.sender_id == current_user.id)
+                &
+                (ChatMessage.receiver_id == user_id)
+            )
+
+            |
+
+            (
+                (ChatMessage.sender_id == user_id)
+                &
+                (ChatMessage.receiver_id == current_user.id)
+            )
         )
 
     ).order_by(
+
         ChatMessage.created_at.asc()
+
     ).all()
 
-    result = []
+    results = []
 
     for msg in messages:
 
-        created = msg.created_at
+        results.append({
 
-        if created.date() == datetime.utcnow().date():
+            "id":
+            msg.id,
 
-            formatted = created.strftime(
+            "sender_id":
+            msg.sender_id,
+
+            "receiver_id":
+            msg.receiver_id,
+
+            "message":
+            msg.message,
+
+            "file_url":
+            msg.file_url,
+
+            "file_name":
+            msg.file_name,
+
+            "file_size":
+            msg.file_size,
+
+            "file_type":
+            msg.file_type,
+
+            "file_category":
+            msg.file_category,
+
+            "created_at":
+            msg.created_at.strftime(
                 "%I:%M %p"
-            )
+            ) if msg.created_at.date() == datetime.utcnow().date()
 
-        else:
+            else
 
-            formatted = created.strftime(
+            msg.created_at.strftime(
                 "%d %b %Y"
-            )
+            ),
 
-        result.append({
+            "deleted":
+            msg.deleted,
 
-            "id": msg.id,
-
-            "sender_id": msg.sender_id,
-
-            "receiver_id": msg.receiver_id,
-
-            "message": msg.message,
-
-            "file_url": msg.file_url,
-
-            "file_name": msg.file_name,
-
-            "file_type": msg.file_type,
-
-            "deleted": msg.deleted,
-
-            "created_at": formatted
+            "is_read":
+            msg.is_read
         })
 
-    return jsonify(result)
+    return jsonify(results)
 
+
+# =========================
+# CHAT FILE UPLOAD
+# =========================
+
+@dashboard_bp.route(
+    "/chat/upload",
+    methods=["POST"]
+)
+@login_required
+@limiter.limit("30/minute")
+def upload_chat_file():
+
+    try:
+
+        if "file" not in request.files:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                "No file uploaded"
+            }), 400
+
+        file = request.files["file"]
+
+        data = save_chat_file(file)
+
+        return jsonify({
+
+            "success": True,
+
+            "file": data
+        })
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+            str(error)
+        }), 400
+
+
+# =========================
+# CREATE GROUP
+# =========================
 
 @dashboard_bp.route(
     "/chat/group/create",
@@ -652,12 +595,13 @@ def create_group():
         "members",
         []
     )
-
+    members = list(set(members))
     if not name:
 
         return jsonify({
+
             "success": False
-        })
+        }), 400
 
     group = ChatGroup(
 
@@ -681,16 +625,15 @@ def create_group():
 
     for user_id in members:
 
-        existing = ChatGroupMember.query.filter_by(
+        try:
 
-            group_id=group.id,
+            user_id = int(user_id)
 
-            user_id=user_id
+        except (TypeError, ValueError):
 
-        ).first()
+            continue
 
-        if existing:
-
+        if user_id == current_user.id:
             continue
 
         member = ChatGroupMember(
@@ -708,9 +651,14 @@ def create_group():
 
         "success": True,
 
-        "group_id": group.id
+        "group_id":
+        group.id
     })
 
+
+# =========================
+# ARCHIVE CHAT
+# =========================
 
 @dashboard_bp.route(
     "/chat/archive",
@@ -724,6 +672,12 @@ def archive_chat():
     conversation_id = data.get(
         "conversation_id"
     )
+    if not conversation_id:
+
+        return jsonify({
+
+            "success": False
+        }), 400
 
     existing = ChatArchive.query.filter_by(
 
@@ -736,6 +690,7 @@ def archive_chat():
     if existing:
 
         return jsonify({
+
             "success": True
         })
 
@@ -751,9 +706,21 @@ def archive_chat():
     db.session.commit()
 
     return jsonify({
+
         "success": True
     })
 
+
+# =========================
+# BLOCK USER
+# =========================
+
+
+
+
+# =========================
+# USER PROFILE API
+# =========================
 
 @dashboard_bp.route(
     "/chat/user/<int:user_id>"
@@ -766,29 +733,685 @@ def chat_user_profile(user_id):
     )
 
     return jsonify({
-
         "full_name":
-        user.display_name,
+        user.display_name or "",
 
         "first_name":
-        user.first_name,
+        user.first_name or "",
 
         "last_name":
-        user.last_name,
+        user.last_name or "",
 
         "email":
-        user.email,
+        user.email or "",
 
         "employee_id":
-        user.employee_id,
-
+        user.employee_id or "",
+    
         "role":
         user.role.name if user.role else "",
 
         "profile_image":
-        user.profile_image,
+        user.profile_image or "",
 
         "banner":
-        user.banner_image
+        user.banner_image or ""
     })
 
+
+# =========================
+# BANNER UPLOAD
+# =========================
+
+@dashboard_bp.route("/upload-banner-image", methods=["POST"])
+@limiter.limit("10/minute")
+@login_required
+def upload_banner_image():
+
+    try:
+
+        if "banner" not in request.files:
+            return jsonify({
+                "success": False,
+                "message": "No image uploaded"
+            }), 400
+
+        image = request.files["banner"]
+
+        if not image or image.filename == "":
+            return jsonify({
+                "success": False,
+                "message": "Invalid image"
+            }), 400
+
+        allowed_extensions = {"png", "jpg", "jpeg", "webp"}
+
+        extension = image.filename.rsplit(".", 1)[-1].lower()
+
+        image.seek(0, os.SEEK_END)
+
+        file_size = image.tell()
+
+        image.seek(0)
+
+        if file_size > MAX_IMAGE_SIZE:
+
+            return jsonify({
+
+                "success": False,
+
+                "message": "Image too large"
+
+            }), 400
+
+        if extension not in allowed_extensions:
+            return jsonify({
+                "success": False,
+                "message": "Unsupported image format"
+            }), 400
+
+        upload_dir = os.path.join(
+            current_app.static_folder,
+            "uploads",
+            "banners"
+        )
+
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = (
+            f"banner_{current_user.id}_{int(time.time())}.webp"
+        )
+
+        save_path = os.path.join(upload_dir, filename)
+
+        try:
+
+            img = Image.open(image).convert("RGB")
+
+        except Exception:
+
+            return jsonify({
+
+                "success": False,
+
+                "message": "Invalid image"
+
+            }), 400
+
+        img.save(
+            save_path,
+            "WEBP",
+            quality=85
+        )
+
+        banner_url = url_for(
+            "static",
+            filename=f"uploads/banners/{filename}"
+        )
+
+        old_banner = current_user.banner_image
+
+        current_user.banner_image = banner_url
+
+        db.session.commit()
+
+        if old_banner:
+
+            try:
+
+                old_path = os.path.join(
+                    current_app.root_path,
+                    old_banner.lstrip("/")
+                )
+
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+
+            except Exception:
+                pass
+
+        return jsonify({
+            "success": True,
+            "banner_url": banner_url
+        })
+
+    except Exception as error:
+
+        current_app.logger.exception(error)
+
+        return jsonify({
+            "success": False,
+            "message": "Banner upload failed"
+        }), 500
+
+# =========================
+# CLEAR CHAT
+# =========================
+
+@dashboard_bp.route(
+    "/chat/clear",
+    methods=["POST"]
+)
+@login_required
+def clear_chat():
+
+    data = request.json
+
+    receiver_id = data.get(
+        "receiver_id"
+    )
+
+    if not receiver_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+            "Receiver missing"
+        }), 400
+
+    messages = ChatMessage.query.filter(
+
+        ChatMessage.deleted == False,
+
+        (
+
+            (
+                ChatMessage.sender_id
+                ==
+                current_user.id
+            )
+
+            &
+
+            (
+                ChatMessage.receiver_id
+                ==
+                receiver_id
+            )
+
+        )
+
+        |
+
+        (
+
+            (
+                ChatMessage.sender_id
+                ==
+                receiver_id
+            )
+
+            &
+
+            (
+                ChatMessage.receiver_id
+                ==
+                current_user.id
+            )
+
+        )
+
+    ).all()
+
+    for msg in messages:
+
+        existing = ChatMessageVisibility.query.filter_by(
+
+            message_id=msg.id,
+
+            hidden_for_user_id=current_user.id
+
+        ).first()
+
+        if existing:
+
+            continue
+
+        hidden = ChatMessageVisibility(
+
+            message_id=msg.id,
+
+            hidden_for_user_id=current_user.id
+        )
+
+        db.session.add(hidden)
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+# =========================
+# UNARCHIVE CHAT
+# =========================
+
+@dashboard_bp.route(
+    "/chat/unarchive",
+    methods=["POST"]
+)
+@login_required
+def unarchive_chat():
+
+    data = request.json
+
+    conversation_id = data.get(
+        "conversation_id"
+    )
+
+    archive = ChatArchive.query.filter_by(
+
+        user_id=current_user.id,
+
+        conversation_id=conversation_id
+
+    ).first()
+
+    if archive:
+
+        db.session.delete(
+            archive
+        )
+
+        db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+# =========================
+# UNBLOCK USER
+# =========================
+
+@dashboard_bp.route(
+    "/chat/unblock-user",
+    methods=["POST"]
+)
+@login_required
+def unblock_user():
+
+    data = request.json
+
+    blocked_id = data.get(
+        "user_id"
+    )
+
+    if not blocked_id:
+
+        return jsonify({
+
+            "success": False
+        }), 400
+
+    block = ChatBlock.query.filter_by(
+
+        blocker_id=current_user.id,
+
+        blocked_id=blocked_id
+
+    ).first()
+
+    if block:
+
+        db.session.delete(
+            block
+        )
+
+        db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+# =========================
+# ONLINE USERS
+# =========================
+
+@dashboard_bp.route(
+    "/chat/online-users"
+)
+@login_required
+def get_online_users():
+
+    from app.realtime.socket import (
+        online_users
+    )
+
+    return jsonify({
+
+        "users":
+        [list(map(int, online_users))]
+    })
+
+
+# =========================
+# HEALTH CHECK
+# =========================
+
+@dashboard_bp.route(
+    "/chat/health"
+)
+@login_required
+def chat_health():
+
+    return jsonify({
+
+        "success": True,
+
+        "socket": True,
+
+        "chat": True
+    })
+
+# =========================
+# DELETE MESSAGE
+# =========================
+
+@dashboard_bp.route(
+    "/chat/delete-message",
+    methods=["POST"]
+)
+@login_required
+def delete_message():
+
+    data = request.json
+
+    message_id = data.get(
+        "message_id"
+    )
+
+    if not message_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+            "Message ID missing"
+        }), 400
+
+    message = ChatMessage.query.filter_by(
+
+        id=message_id,
+
+        sender_id=current_user.id
+
+    ).first()
+
+    if not message:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+            "Message not found"
+        }), 404
+
+    message.deleted = True
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+# =========================
+# CHAT SEARCH
+# =========================
+
+@dashboard_bp.route(
+    "/chat/search"
+)
+@login_required
+@limiter.limit("30/minute")
+def search_chat_users():
+
+    query = (
+        request.args.get("q") or ""
+    ).strip()
+
+    if len(query) < 2:
+
+        return jsonify([])
+
+    users = User.query.filter(
+
+        User.id != current_user.id,
+
+        User.display_name.isnot(None),
+
+        User.display_name.ilike(
+            f"%{query}%"
+        )
+
+    ).limit(20).all()
+
+    results = []
+
+    for user in users:
+
+        results.append({
+
+            "id":
+            user.id,
+
+            "name":
+            user.display_name,
+
+            "avatar":
+            user.profile_image or "/static/default-avatar.png",
+
+            "role":
+            user.role.name if user.role else ""
+        })
+
+    return jsonify(results)
+
+
+# =========================
+# GET GROUPS
+# =========================
+
+@dashboard_bp.route(
+    "/chat/groups"
+)
+@login_required
+def get_groups():
+
+    memberships = ChatGroupMember.query.filter_by(
+
+        user_id=current_user.id
+
+    ).all()
+
+    groups = []
+
+    for membership in memberships:
+
+        group = ChatGroup.query.get(
+            membership.group_id
+        )
+
+        if not group:
+
+            continue
+
+        groups.append({
+
+            "id":
+            group.id,
+
+            "name":
+            group.name
+        })
+
+    return jsonify(groups)
+
+
+# =========================
+# GET GROUP MESSAGES
+# =========================
+
+@dashboard_bp.route(
+    "/chat/group/<int:group_id>/messages"
+)
+@login_required
+def get_group_messages(group_id):
+
+    membership = ChatGroupMember.query.filter_by(
+
+        group_id=group_id,
+
+        user_id=current_user.id
+
+    ).first()
+
+    if not membership:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+            "Access denied"
+        }), 403
+
+    messages = ChatMessage.query.filter(
+
+        ChatMessage.group_id == group_id,
+
+        ChatMessage.deleted == False
+
+    ).order_by(
+
+        ChatMessage.created_at.asc()
+
+    ).all()
+
+    results = []
+
+    for msg in messages:
+
+        results.append({
+
+            "id":
+            msg.id,
+
+            "group_id":
+            msg.group_id,
+
+            "sender_id":
+            msg.sender_id,
+
+            "sender_name":
+            msg.sender.display_name
+            if msg.sender else "User",
+
+            "message":
+            msg.message,
+
+            "file_url":
+            msg.file_url,
+
+            "file_name":
+            msg.file_name,
+
+            "file_type":
+            msg.file_type,
+
+            "created_at":
+            msg.created_at.strftime(
+                "%I:%M %p"
+            ) if msg.created_at.date() == datetime.utcnow().date()
+
+            else
+
+            msg.created_at.strftime(
+                "%d %b %Y"
+            )
+        })
+
+    return jsonify(results)
+
+
+# =========================
+# ARCHIVED CHATS
+# =========================
+
+@dashboard_bp.route(
+    "/chat/archived"
+)
+@login_required
+def archived_chats():
+
+    archives = ChatArchive.query.filter_by(
+
+        user_id=current_user.id
+
+    ).all()
+
+    results = []
+
+    for archive in archives:
+
+        results.append({
+
+            "conversation_id":
+            archive.conversation_id
+        })
+
+    return jsonify(results)
+
+
+# =========================
+# BLOCKED USERS
+# =========================
+
+@dashboard_bp.route(
+    "/chat/blocked-users"
+)
+@login_required
+def blocked_users():
+
+    blocks = ChatBlock.query.filter_by(
+
+        blocker_id=current_user.id
+
+    ).all()
+
+    results = []
+
+    for block in blocks:
+
+        user = User.query.get(
+            block.blocked_id
+        )
+
+        if not user:
+
+            continue
+
+        results.append({
+
+            "id":
+            user.id,
+
+            "name":
+            user.display_name,
+
+            "avatar":
+            user.profile_image
+        })
+
+    return jsonify(results)

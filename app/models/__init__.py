@@ -11,3 +11,5 @@ from app.models.workspace import (
 from app.models.workspace_version import (
     WorkspaceVersion
 )
+
+from app.models.chat_conversation import ChatConversation

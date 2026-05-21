@@ -7,41 +7,75 @@ from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import redis
-import os
+
+
+# =========================
+# DATABASE
+# =========================
 
 db = SQLAlchemy()
 
 migrate = Migrate()
 
+
+# =========================
+# LOGIN MANAGER
+# =========================
+
 login_manager = LoginManager()
+
+login_manager.login_view = "auth.login"
+
+login_manager.login_message_category = "warning"
+
+
+# =========================
+# SECURITY
+# =========================
 
 bcrypt = Bcrypt()
 
-mail = Mail()
-
 csrf = CSRFProtect()
 
+
+# =========================
+# MAIL
+# =========================
+
+mail = Mail()
+
+
+# =========================
+# SOCKET IO
+# =========================
+
 socketio = SocketIO(
+
     cors_allowed_origins="*",
-    async_mode="threading",
-    manage_session=False,
-    ping_timeout=60,
+
+    async_mode="eventlet",
+
+    manage_session=True,
+
+    ping_timeout=120,
+
     ping_interval=25,
+
     logger=False,
+
     engineio_logger=False
 )
+
+
+# =========================
+# RATE LIMITER
+# =========================
 
 limiter = Limiter(
 
     key_func=get_remote_address,
 
-    storage_uri=os.getenv(
-        "REDIS_URL"
-    )
-)
+    storage_uri="memory://",
 
-redis_client = redis.from_url(
-    os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-    decode_responses=True
+    default_limits=["5000 per day"]
 )

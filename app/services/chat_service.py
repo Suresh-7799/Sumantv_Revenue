@@ -1,15 +1,26 @@
 import os
 import uuid
+import mimetypes
 
 from flask import current_app
 
 from werkzeug.utils import secure_filename
 
 
+# =========================
+# CONFIG
+# =========================
+
 MAX_FILE_SIZE = 30 * 1024 * 1024
 
 
+# =========================
+# ALLOWED EXTENSIONS
+# =========================
+
 ALLOWED_EXTENSIONS = {
+
+    # IMAGES
 
     "png",
     "jpg",
@@ -17,10 +28,15 @@ ALLOWED_EXTENSIONS = {
     "gif",
     "webp",
 
+    # VIDEOS
+
     "mp4",
     "mov",
     "avi",
     "mkv",
+    "webm",
+
+    # DOCUMENTS
 
     "pdf",
 
@@ -33,9 +49,13 @@ ALLOWED_EXTENSIONS = {
     "ppt",
     "pptx",
 
+    # ARCHIVES
+
     "zip",
     "rar",
     "7z",
+
+    # TEXT / CODE
 
     "txt",
     "json",
@@ -47,40 +67,96 @@ ALLOWED_EXTENSIONS = {
 }
 
 
+# =========================
+# FILE CHECK
+# =========================
+
 def allowed_file(filename):
 
-    return (
+    if not filename:
+        return False
 
-        "." in filename
+    if "." not in filename:
+        return False
 
-        and
+    extension = filename.rsplit(
+        ".",
+        1
+    )[1].lower()
 
-        filename.rsplit(
-            ".",
-            1
-        )[1].lower()
+    return extension in ALLOWED_EXTENSIONS
 
-        in ALLOWED_EXTENSIONS
-    )
 
+# =========================
+# FILE TYPE CATEGORY
+# =========================
+
+def get_file_category(extension):
+
+    image_types = {
+
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp"
+    }
+
+    video_types = {
+
+        "mp4",
+        "mov",
+        "avi",
+        "mkv",
+        "webm"
+    }
+
+    if extension in image_types:
+        return "image"
+
+    if extension in video_types:
+        return "video"
+
+    return "file"
+
+
+# =========================
+# SAVE FILE
+# =========================
 
 def save_chat_file(file):
 
     if not file:
 
         raise ValueError(
-            "No file"
+            "No file uploaded"
         )
 
-    filename = secure_filename(
-        file.filename
+    original_name = secure_filename(
+        file.filename or ""
     )
 
-    if not allowed_file(filename):
+    if not original_name:
+
+        raise ValueError(
+            "Invalid filename"
+        )
+
+    if len(original_name) > 180:
+
+        raise ValueError(
+            "Filename too long"
+        )
+
+    if not allowed_file(original_name):
 
         raise ValueError(
             "Invalid file type"
         )
+
+    # =========================
+    # FILE SIZE
+    # =========================
 
     file.seek(0, os.SEEK_END)
 
@@ -94,14 +170,39 @@ def save_chat_file(file):
             "Max upload size is 30MB"
         )
 
-    extension = filename.rsplit(
+    # =========================
+    # EXTENSION
+    # =========================
+
+    extension = original_name.rsplit(
         ".",
         1
     )[1].lower()
 
+    # =========================
+    # MIME CHECK
+    # =========================
+
+    mime_type = mimetypes.guess_type(
+        original_name
+    )[0]
+
+    if not mime_type:
+
+        mime_type = "application/octet-stream"
+
+    # =========================
+    # UNIQUE FILE NAME
+    # =========================
+
     unique_name = (
+
         f"{uuid.uuid4().hex}.{extension}"
     )
+
+    # =========================
+    # UPLOAD PATH
+    # =========================
 
     upload_folder = os.path.join(
 
@@ -113,16 +214,28 @@ def save_chat_file(file):
     )
 
     os.makedirs(
+
         upload_folder,
+
         exist_ok=True
     )
 
-    path = os.path.join(
+    file_path = os.path.join(
+
         upload_folder,
+
         unique_name
     )
 
-    file.save(path)
+    # =========================
+    # SAVE
+    # =========================
+
+    file.save(file_path)
+
+    # =========================
+    # RESPONSE
+    # =========================
 
     return {
 
@@ -130,11 +243,19 @@ def save_chat_file(file):
         f"/static/uploads/chat/{unique_name}",
 
         "name":
-        filename,
+        original_name,
 
         "size":
         size,
 
         "type":
-        extension
+        extension,
+
+        "mime":
+        mime_type,
+
+        "category":
+        get_file_category(
+            extension
+        )
     }

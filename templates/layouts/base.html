@@ -54,6 +54,11 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='css/alerts.css') }}">
 
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/chat.css') }}">
+
+
     <!-- FONT -->
 
     <link
@@ -147,20 +152,32 @@
         src="{{ url_for('static', filename='js/security.js') }}">
     </script>
 
-    <script>
+<script>
+
+window.addEventListener(
+
+    "DOMContentLoaded",
+
+    ()=>{
 
         if(window.lucide){
 
             lucide.createIcons();
-
         }
+    }
+);
 
-    </script>
+</script>
 
-    {% block extra_js %}
-    {% endblock %}
+{% block extra_js %}
+{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+{% if current_user.is_authenticated %}
+
+{% include "components/chat_profile_modal.html" %}
+{% include "components/chat_widget.html" %}
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
@@ -168,21 +185,18 @@
 
 window.socket = io({
 
-    transports: ["websocket", "polling"],
+    path: "/socket.io",
 
-    reconnection: true
+    transports: [
+        "websocket",
+        "polling"
+    ]
 });
 
-</script>
+window.CURRENT_USER_ID =
+Number("{{ current_user.id }}");
 
-<link
-rel="stylesheet"
-href="{{ url_for('static', filename='css/chat.css') }}">
-
-<script>
-
-const CURRENT_USER_ID =
-{{ current_user.id if current_user.is_authenticated else "null" }};
+console.log("CHAT SOCKET READY");
 
 </script>
 
@@ -190,8 +204,13 @@ const CURRENT_USER_ID =
 src="{{ url_for('static', filename='js/chat.js') }}">
 </script>
 
-{% include "includes/chat_profile_modal.html" %}
+
+
+{% endif %}
+
+
 
 </body>
 
 </html>
+

@@ -1,3 +1,48 @@
+window.addEventListener(
+
+    "load",
+
+    ()=>{
+
+        initializeChat();
+    }
+);
+
+function initializeChat(){
+
+    console.log("CHAT INIT STARTED");
+
+}
+
+function initializeChat(){
+
+/* =========================
+   SAFETY CHECKS
+========================= */
+
+if(!window.socket){
+
+    console.error(
+        "Socket missing"
+    );
+
+    return;
+}
+
+if(typeof CURRENT_USER_ID === "undefined"){
+
+    console.error(
+        "CURRENT_USER_ID missing"
+    );
+
+    return;
+}
+
+
+/* =========================
+   GLOBALS
+========================= */
+
 const socket = window.socket;
 
 const csrfToken = document
@@ -7,85 +52,432 @@ const csrfToken = document
 ?.getAttribute("content");
 
 
+/* =========================
+   ELEMENTS
+========================= */
+
 const chatFab =
-document.getElementById("chatFab");
+document.getElementById(
+    "chatFab"
+);
 
 const chatDrawer =
-document.getElementById("chatDrawer");
+document.getElementById(
+    "chatDrawer"
+);
 
 const closeChatDrawer =
-document.getElementById("closeChatDrawer");
+document.getElementById(
+    "closeChatDrawer"
+);
 
 const chatConversation =
-document.getElementById("chatConversation");
+document.getElementById(
+    "chatConversation"
+);
 
 const activeChatUser =
-document.getElementById("activeChatUser");
+document.getElementById(
+    "activeChatUser"
+);
 
 const chatMessages =
-document.getElementById("chatMessages");
+document.getElementById(
+    "chatMessages"
+);
 
 const sendChatMessage =
-document.getElementById("sendChatMessage");
+document.getElementById(
+    "sendChatMessage"
+);
 
 const chatMessageInput =
-document.getElementById("chatMessageInput");
+document.getElementById(
+    "chatMessageInput"
+);
 
 const chatUserSearch =
-document.getElementById("chatUserSearch");
+document.getElementById(
+    "chatUserSearch"
+);
 
 const attachChatFile =
-document.getElementById("attachChatFile");
+document.getElementById(
+    "attachChatFile"
+);
 
 const chatFileInput =
-document.getElementById("chatFileInput");
+document.getElementById(
+    "chatFileInput"
+);
+
+const chatMenuBtn =
+document.getElementById(
+    "chatMenuBtn"
+);
+
+const chatMenuDropdown =
+document.getElementById(
+    "chatMenuDropdown"
+);
+
+const backToUsers =
+document.getElementById(
+    "backToUsers"
+);
+
+const viewProfileBtn =
+document.getElementById(
+    "viewProfileBtn"
+);
+
+
+/* =========================
+   STATES
+========================= */
 
 let activeReceiverId = null;
 
 let uploadedFile = null;
+
+let uploadInProgress = false;
+
+let readThrottle = false;
+
+let typingTimeout;
+
+
+/* =========================
+   SOCKET CLEANUP
+========================= */
+
+socket.off("connect");
+socket.off("receive_message");
+socket.off("message_deleted");
+socket.off("chat_cleared");
+socket.off("user_typing");
+socket.off("message_read");
+socket.off("chat_error");
+socket.off("disconnect");
+socket.off("reconnect");
 
 
 /* =========================
    SOCKET CONNECT
 ========================= */
 
-socket.on("connect", ()=>{
+socket.on(
 
-    console.log(
-        "SOCKET CONNECTED:",
-        socket.id
-    );
+    "connect",
 
-    if(activeReceiverId){
+    async ()=>{
 
-        socket.emit(
-            "join_chat",
-            {
-                receiver_id:
-                activeReceiverId
-            }
+        console.log(
+            "SOCKET CONNECTED:",
+            socket.id
         );
+
+        if(activeReceiverId){
+
+            socket.emit(
+
+                "join_chat",
+
+                {
+                    receiver_id:
+                    activeReceiverId
+                }
+            );
+
+            await loadMessages();
+        }
     }
-});
+);
 
 
 /* =========================
-   OPEN DRAWER
+   RECEIVE MESSAGE
 ========================= */
 
-chatFab?.addEventListener(
+socket.on(
 
-    "click",
+    "receive_message",
 
-    (e)=>{
+    (data)=>{
 
-        e.stopPropagation();
+        const senderId = Number(
+            data.sender_id
+        );
 
-        chatDrawer.classList.toggle(
-            "active"
+        const receiverId = Number(
+            data.receiver_id
+        );
+
+        const currentId = Number(
+            CURRENT_USER_ID
+        );
+
+        const belongsToCurrentChat =
+
+            (
+                senderId === activeReceiverId
+                &&
+                receiverId === currentId
+            )
+
+            ||
+
+            (
+                senderId === currentId
+                &&
+                receiverId === activeReceiverId
+            );
+
+        if(!belongsToCurrentChat){
+
+            return;
+        }
+
+        appendMessage(data);
+    }
+);
+
+
+/* =========================
+   MESSAGE DELETE
+========================= */
+
+socket.on(
+
+    "message_deleted",
+
+    (data)=>{
+
+        const element =
+
+        document.querySelector(
+
+            `[data-message-id="${data.message_id}"]`
+        );
+
+        if(element){
+
+            element.remove();
+        }
+    }
+);
+
+
+/* =========================
+   CHAT CLEARED
+========================= */
+
+socket.on(
+
+    "chat_cleared",
+
+    ()=>{
+
+        if(chatMessages){
+
+            chatMessages.innerHTML = "";
+        }
+    }
+);
+
+
+/* =========================
+   READ RECEIPTS
+========================= */
+
+socket.on(
+
+    "message_read",
+
+    (data)=>{
+
+        const message =
+
+        document.querySelector(
+
+            `[data-message-id="${data.message_id}"]`
+        );
+
+        if(!message){
+
+            return;
+        }
+
+        message.classList.add(
+            "read"
         );
     }
 );
+
+
+/* =========================
+   TYPING INDICATOR
+========================= */
+
+socket.on(
+
+    "user_typing",
+
+    ()=>{
+
+        const typingEl =
+        document.getElementById(
+            "chatTypingIndicator"
+        );
+
+        if(!typingEl){
+
+            return;
+        }
+
+        typingEl.style.display =
+        "block";
+
+        clearTimeout(
+            typingTimeout
+        );
+
+        typingTimeout = setTimeout(
+
+            ()=>{
+
+                typingEl.style.display =
+                "none";
+            },
+
+            1500
+        );
+    }
+);
+
+
+/* =========================
+   SOCKET ERRORS
+========================= */
+
+socket.on(
+
+    "chat_error",
+
+    (data)=>{
+
+        console.error(
+            data.message
+        );
+
+        alert(
+            data.message ||
+            "Chat error"
+        );
+    }
+);
+
+
+/* =========================
+   SOCKET DISCONNECT
+========================= */
+
+socket.on(
+
+    "disconnect",
+
+    ()=>{
+
+        console.warn(
+            "Socket disconnected"
+        );
+    }
+);
+
+
+/* =========================
+   SOCKET RECONNECT
+========================= */
+
+socket.on(
+
+    "reconnect",
+
+    async ()=>{
+
+        console.log(
+            "Socket reconnected"
+        );
+
+        if(activeReceiverId){
+
+            socket.emit(
+
+                "join_chat",
+
+                {
+                    receiver_id:
+                    activeReceiverId
+                }
+            );
+
+            setTimeout(async ()=>{
+
+                await loadMessages();
+
+            }, 300);
+        }
+    }
+);
+
+
+/* =========================
+   OPEN / CLOSE DRAWER
+========================= */
+
+if(chatFab){
+
+    chatFab.onclick = (e)=>{
+
+        e.stopPropagation();
+
+        if(chatDrawer){
+
+            chatDrawer.classList.toggle(
+                "active"
+            );
+        }
+    };
+}
+
+
+/* =========================
+   OUTSIDE CLICK
+========================= */
+
+window.onclick = (e)=>{
+
+    const clickedFab = e.target.closest(
+        "#chatFab"
+    );
+
+    const clickedDrawer = e.target.closest(
+        "#chatDrawer"
+    );
+
+    if(
+        clickedFab
+        ||
+        clickedDrawer
+    ){
+
+        return;
+    }
+
+    chatDrawer?.classList.remove(
+        "active"
+    );
+};
 
 
 /* =========================
@@ -98,12 +490,37 @@ closeChatDrawer?.addEventListener(
 
     ()=>{
 
-        chatDrawer.classList.remove(
+        chatDrawer?.classList.remove(
             "active"
         );
 
-        chatConversation.style.display =
-        "none";
+        chatConversation?.classList.remove(
+            "active"
+        );
+
+        if(chatMessages){
+
+            chatMessages.innerHTML = "";
+        }
+    }
+);
+
+
+/* =========================
+   BACK BUTTON
+========================= */
+
+backToUsers?.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        chatConversation?.classList.remove(
+            "active"
+        );
+
+        activeReceiverId = null;
     }
 );
 
@@ -147,54 +564,6 @@ chatUserSearch?.addEventListener(
 );
 
 
-/* =========================
-   OPEN USER CHAT
-========================= */
-
-document.addEventListener(
-
-    "click",
-
-    async (e)=>{
-
-        const item =
-
-        e.target.closest(
-            ".chat-user-item"
-        );
-
-        if(!item){
-
-            return;
-        }
-
-        activeReceiverId = Number(
-            item.dataset.userId
-        );
-
-        activeChatUser.innerText =
-        item.dataset.name;
-
-        chatConversation.style.display =
-        "flex";
-
-        socket.emit(
-            "join_chat",
-            {
-                receiver_id:
-                activeReceiverId
-            }
-        );
-
-        await loadMessages();
-    }
-);
-
-
-/* =========================
-   LOAD MESSAGES
-========================= */
-
 async function loadMessages(){
 
     if(!activeReceiverId){
@@ -205,14 +574,25 @@ async function loadMessages(){
     try{
 
         const response = await fetch(
-
             `/chat/messages/${activeReceiverId}`
         );
 
-        const messages =
-        await response.json();
+        if(!response.ok){
 
-        chatMessages.innerHTML = "";
+            return;
+        }
+
+        const messages = await response.json();
+
+        if(!Array.isArray(messages)){
+
+            return;
+        }
+
+        if(chatMessages){
+
+            chatMessages.innerHTML = "";
+        }
 
         messages.forEach(msg=>{
 
@@ -233,6 +613,334 @@ async function loadMessages(){
 
 
 /* =========================
+   GLOBAL CLICK EVENTS
+========================= */
+
+document.addEventListener(
+
+    "click",
+
+    async (e)=>{
+
+        const userItem =
+
+        e.target.closest(
+            ".chat-user-item"
+        );
+
+        const messageMenuBtn =
+
+        e.target.closest(
+            ".chat-message-menu-btn"
+        );
+
+        const dropdownContent =
+
+        e.target.closest(
+            ".chat-message-dropdown"
+        );
+
+        if(dropdownContent){
+
+            e.stopPropagation();
+
+            return;
+        }
+
+        const profileModal =
+
+        document.getElementById(
+            "chatProfileModal"
+        );
+
+
+        /* =========================
+           OPEN USER CHAT
+        ========================= */
+
+        if(userItem){
+
+            activeReceiverId = Number(
+                userItem.dataset.userId
+            );
+
+            if(activeChatUser){
+
+                activeChatUser.innerText =
+                userItem.dataset.name || "";
+            }
+            const avatar =
+            document.getElementById(
+                "activeChatAvatar"
+            );
+
+            if(avatar){
+
+                avatar.src =
+                userItem.dataset.avatar || "";
+            }
+
+            chatConversation?.classList.add(
+                "active"
+            );
+
+            socket.emit(
+
+                "join_chat",
+
+                {
+                    receiver_id:
+                    activeReceiverId
+                }
+            );
+
+            await loadMessages();
+
+            return;
+        }
+
+        /* =========================
+           MESSAGE DROPDOWN
+        ========================= */
+
+        if(messageMenuBtn){
+
+            e.stopPropagation();
+
+            const dropdown =
+
+            messageMenuBtn.parentElement
+            ?.querySelector(
+                ".chat-message-dropdown"
+            );
+
+            document
+            .querySelectorAll(
+                ".chat-message-dropdown"
+            )
+            .forEach(drop=>{
+
+                if(drop !== dropdown){
+
+                    drop.classList.remove(
+                        "active"
+                    );
+                }
+            });
+
+            dropdown?.classList.toggle(
+                "active"
+            );
+
+            return;
+        }
+
+
+        /* =========================
+           CLOSE MENUS
+        ========================= */
+
+        document
+        .querySelectorAll(
+            ".chat-message-dropdown"
+        )
+        .forEach(drop=>{
+
+            drop.classList.remove(
+                "active"
+            );
+        });
+
+        chatMenuDropdown?.classList.remove(
+            "active"
+        );
+
+
+        /* =========================
+           CLOSE PROFILE MODAL
+        ========================= */
+
+        if(
+
+            profileModal
+
+            &&
+
+            e.target === profileModal
+        ){
+
+            profileModal.classList.remove(
+                "active"
+            );
+        }
+    }
+);
+
+
+/* =========================
+   LOAD MESSAGES
+========================= */
+
+viewProfileBtn?.addEventListener(
+
+    "click",
+
+    async ()=>{
+
+        if(!activeReceiverId){
+
+            return;
+        }
+
+        try{
+
+            const response =
+            await fetch(
+
+                `/chat/user/${activeReceiverId}`
+            );
+
+            if(!response.ok){
+
+                return;
+            }
+
+            const user =
+            await response.json();
+
+            const modal =
+
+            document.getElementById(
+                "chatProfileModal"
+            );
+
+            if(!modal){
+
+                return;
+            }
+
+            modal.classList.add(
+                "active"
+            );
+
+            const avatar =
+            document.getElementById(
+                "chatProfileAvatar"
+            );
+
+            const banner =
+            document.getElementById(
+                "chatProfileBanner"
+            );
+
+            if(avatar){
+
+                avatar.src =
+                user.profile_image ||
+                "/static/default-avatar.png";
+            }
+
+            if(banner){
+
+                if(user.banner){
+
+                    banner.src =
+                    user.banner;
+
+                    banner.style.display =
+                    "block";
+                }
+
+                else{
+
+                    banner.removeAttribute(
+                        "src"
+                    );
+
+                    banner.style.display =
+                    "none";
+                }
+            }
+
+            const fullNameEl =
+            document.getElementById(
+                "chatProfileFullName"
+            );
+
+            if(fullNameEl){
+
+                fullNameEl.innerText =
+                user.full_name || "-";
+            }
+
+            const firstNameEl =
+            document.getElementById(
+                "chatProfileFirstName"
+            );
+
+            if(firstNameEl){
+
+                firstNameEl.innerText =
+                user.first_name || "-";
+            }
+
+            const lastNameEl =
+            document.getElementById(
+                "chatProfileLastName"
+            );
+
+            if(lastNameEl){
+
+                lastNameEl.innerText =
+                user.last_name || "-";
+            }
+
+            const emailEl =
+            document.getElementById(
+                "chatProfileEmail"
+            );
+
+            if(emailEl){
+
+                emailEl.innerText =
+                user.email || "-";
+            }
+
+            const employeeIdEl =
+            document.getElementById(
+                "chatProfileEmployeeId"
+            );
+
+            if(employeeIdEl){
+
+                employeeIdEl.innerText =
+                user.employee_id || "-";
+            }
+
+            const roleEl =
+            document.getElementById(
+                "chatProfileRole"
+            );
+
+            if(roleEl){
+
+                roleEl.innerText =
+                user.role || "-";
+            }
+        }
+
+        catch(error){
+
+            console.error(
+                "PROFILE LOAD ERROR:",
+                error
+            );
+        }
+    }
+);
+
+
+/* =========================
    FILE ATTACH
 ========================= */
 
@@ -242,106 +950,194 @@ attachChatFile?.addEventListener(
 
     ()=>{
 
-        chatFileInput.click();
+        if(uploadInProgress){
+
+            return;
+        }
+
+        chatFileInput?.click();
     }
 );
 
+
+/* =========================
+   FILE UPLOAD
+========================= */
 
 chatFileInput?.addEventListener(
 
     "change",
 
-    async ()=>{
+    ()=>{
 
         const file =
-        chatFileInput.files[0];
+        chatFileInput.files?.[0];
 
         if(!file){
 
             return;
         }
 
-        const formData =
-        new FormData();
+        const allowedMimeTypes = [
 
-        formData.append(
-            "file",
-            file
-        );
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif",
 
-        try{
+            "video/mp4",
+            "video/webm",
+            "video/quicktime",
 
-            const response =
-            await fetch(
+            "application/pdf",
 
-                "/chat/upload",
+            "application/zip",
+            "application/x-zip-compressed"
+        ];
 
-                {
-                    method:"POST",
-                    headers:{
+        if(
 
-                        "X-CSRFToken":
-                        csrfToken
-                },
-
-                    body:formData
-                }
-            );
-
-            const data =
-            await response.json();
-
-            if(!data.success){
-
-                alert(
-                    data.message ||
-                    "Upload failed"
-                );
-
-                return;
-            }
-
-            uploadedFile =
-            data.file;
-
-            console.log(
-                "FILE READY:",
-                uploadedFile
-            );
-        }
-
-        catch(error){
-
-            console.error(error);
+            !allowedMimeTypes.includes(
+                file.type
+            )
+        ){
 
             alert(
-                "Upload failed"
+                "Unsupported file type"
             );
+                chatFileInput.value = "";
+            return;
         }
+
+        if(file.size > 30 * 1024 * 1024){
+
+            alert(
+                "Max upload size is 30MB"
+            );
+                chatFileInput.value = "";
+            return;
+        }
+
+        uploadChatFile(file);
     }
 );
 
 
-fetch(
+/* =========================
+   FILE UPLOAD REQUEST
+========================= */
 
-    "/chat/archive",
+async function uploadChatFile(file){
 
-    {
+    uploadInProgress = true;
 
-        method:"POST",
+    const formData =
+    new FormData();
 
-        headers:{
+    formData.append(
+        "file",
+        file
+    );
 
-            "Content-Type":
-            "application/json",
+    try{
 
-            "X-CSRFToken":
+        const xhr =
+        new XMLHttpRequest();
+
+        xhr.open(
+            "POST",
+            "/chat/upload"
+        );
+
+        xhr.setRequestHeader(
+
+            "X-CSRFToken",
+
             csrfToken
-        },
+        );
 
-        body:JSON.stringify(data)
+        xhr.upload.addEventListener(
+
+            "progress",
+
+            (e)=>{
+
+                if(e.lengthComputable){
+
+                    const percent = Math.round(
+
+                        (
+                            e.loaded
+                            /
+                            e.total
+                        ) * 100
+                    );
+
+                    console.log(
+                        "UPLOAD:",
+                        percent + "%"
+                    );
+                }
+            }
+        );
+
+        xhr.onload = ()=>{
+
+            uploadInProgress = false;
+
+            try{
+
+                const data = JSON.parse(
+                    xhr.responseText
+                );
+
+                if(!data.success){
+
+                    alert(
+                        data.message ||
+                        "Upload failed"
+                    );
+
+                    return;
+                }
+
+                uploadedFile =
+                data.file;
+
+                console.log(
+                    "FILE READY:",
+                    uploadedFile
+                );
+
+                chatFileInput.value = "";
+            }
+
+            catch(error){
+
+                console.error(error);
+            }
+        };
+
+        xhr.onerror = ()=>{
+
+            uploadInProgress = false;
+
+            alert(
+                "Upload failed"
+            );
+        };
+
+        xhr.send(formData);
     }
-)
+
+    catch(error){
+
+        uploadInProgress = false;
+
+        console.error(error);
+    }
+}
+
 
 /* =========================
    SEND MESSAGE
@@ -349,9 +1145,24 @@ fetch(
 
 function sendMessage(){
 
+    if(uploadInProgress){
+
+        return;
+    }
+
     const message =
 
-    chatMessageInput.value.trim();
+    chatMessageInput.value
+    .trim();
+
+    if(message.length > 5000){
+
+        alert(
+            "Message too long"
+        );
+
+        return;
+    }
 
     if(
 
@@ -369,6 +1180,22 @@ function sendMessage(){
 
         return;
     }
+
+    if(!socket.connected){
+
+        alert(
+            "Connection lost"
+        );
+
+        return;
+    }
+
+    console.log("SENDING MESSAGE", {
+
+        receiver_id: activeReceiverId,
+
+        message: message
+    });
 
     socket.emit(
 
@@ -391,9 +1218,16 @@ function sendMessage(){
 
     uploadedFile = null;
 
-    chatFileInput.value = "";
+    if(chatFileInput){
+
+        chatFileInput.value = "";
+    }
 }
 
+
+/* =========================
+   SEND BUTTON
+========================= */
 
 sendChatMessage?.addEventListener(
 
@@ -403,13 +1237,24 @@ sendChatMessage?.addEventListener(
 );
 
 
+/* =========================
+   ENTER SEND
+========================= */
+
 chatMessageInput?.addEventListener(
 
-    "keypress",
+    "keydown",
 
     (e)=>{
 
-        if(e.key === "Enter"){
+        if(
+
+            e.key === "Enter"
+
+            &&
+
+            !e.shiftKey
+        ){
 
             e.preventDefault();
 
@@ -420,79 +1265,46 @@ chatMessageInput?.addEventListener(
 
 
 /* =========================
-   RECEIVE MESSAGE
+   TYPING
 ========================= */
 
-socket.on(
+let typingThrottle = false;
 
-    "receive_message",
+chatMessageInput?.addEventListener(
 
-    (data)=>{
+    "input",
 
-        if(
+    ()=>{
 
-            Number(data.sender_id)
-
-            !==
-
-            activeReceiverId
-
-            &&
-
-            Number(data.receiver_id)
-
-            !==
-
-            activeReceiverId
-        ){
+        if(!activeReceiverId){
 
             return;
         }
 
-        appendMessage(data);
-    }
-);
+        if(typingThrottle){
 
+            return;
+        }
 
-/* =========================
-   DELETE MESSAGE
-========================= */
+        typingThrottle = true;
 
-socket.on(
+        socket.emit(
 
-    "message_deleted",
+            "typing",
 
-    (data)=>{
-
-        const element =
-
-        document.querySelector(
-
-            `[data-message-id="${data.message_id}"]`
+            {
+                receiver_id:
+                activeReceiverId
+            }
         );
 
-        if(element){
+        setTimeout(()=>{
 
-            element.remove();
-        }
+            typingThrottle = false;
+
+        }, 1200);
     }
 );
-
-
-/* =========================
-   CLEAR CHAT
-========================= */
-
-socket.on(
-
-    "chat_cleared",
-
-    ()=>{
-
-        chatMessages.innerHTML = "";
-    }
-);
-
 
 /* =========================
    APPEND MESSAGE
@@ -510,16 +1322,19 @@ function appendMessage(data){
         return;
     }
 
-    const existing =
+    if(data.id){
 
-    document.querySelector(
+        const existing =
 
-        `[data-message-id="${data.id}"]`
-    );
+        document.querySelector(
 
-    if(existing){
+            `[data-message-id="${data.id}"]`
+        );
 
-        return;
+        if(existing){
+
+            return;
+        }
     }
 
     const div =
@@ -544,33 +1359,42 @@ function appendMessage(data){
 
     if(data.file_url){
 
-        const extension =
-
-        (
+        const mimeType = (
             data.file_type || ""
         ).toLowerCase();
 
-        const imageExtensions = [
+        const isImage =
+        mimeType.startsWith(
+            "image/"
+        );
 
-            "png",
-            "jpg",
-            "jpeg",
-            "gif",
-            "webp"
-        ];
+        const isVideo =
+        mimeType.startsWith(
+            "video/"
+        );
 
-        if(
-
-            imageExtensions.includes(
-                extension
-            )
-        ){
+        if(isImage){
 
             fileHtml = `
 
                 <img
                 src="${data.file_url}"
                 class="chat-image-preview">
+            `;
+        }
+
+        else if(isVideo){
+
+            fileHtml = `
+
+                <video
+                controls
+                class="chat-video-preview">
+
+                    <source
+                    src="${data.file_url}">
+
+                </video>
             `;
         }
 
@@ -583,7 +1407,10 @@ function appendMessage(data){
                 target="_blank"
                 class="chat-file-link">
 
-                    📎 ${escapeHtml(data.file_name)}
+                    📎
+                    ${escapeHtml(
+                        data.file_name || "File"
+                    )}
 
                 </a>
             `;
@@ -605,31 +1432,31 @@ function appendMessage(data){
         <div class="chat-message-actions">
 
             <button
-            class="chat-message-menu-btn">
+            class="chat-message-menu-btn"
+            type="button">
 
-                <i data-lucide="chevron-down"></i>
+                <i data-lucide="more-horizontal"></i>
 
             </button>
 
-            <div class="chat-message-dropdown">
+            <div
+            class="chat-message-dropdown">
 
                 <button
-                onclick="copyMessage('${escapeHtml(data.message || "")}')">
+                type="button"
+                class="copy-message-btn"
+                data-message="${escapeHtml(data.message || "")}">
 
-                    Copy Message
+                    Copy
 
                 </button>
 
                 <button
-                onclick="deleteMessage(${data.id})">
+                type="button"
+                class="delete-message-btn"
+                data-id="${data.id}">
 
-                    Delete Message
-
-                </button>
-
-                <button>
-
-                    Forward
+                    Delete
 
                 </button>
 
@@ -653,7 +1480,9 @@ function appendMessage(data){
 
             <div class="chat-message-text">
 
-                ${escapeHtml(data.message || "")}
+                ${escapeHtml(
+                    data.message || ""
+                )}
 
             </div>
 
@@ -661,7 +1490,7 @@ function appendMessage(data){
 
                 <div class="chat-message-time">
 
-                    ${data.created_at}
+                    ${data.created_at || ""}
 
                 </div>
 
@@ -670,7 +1499,10 @@ function appendMessage(data){
         </div>
     `;
 
-    chatMessages.appendChild(div);
+    if(chatMessages){
+
+        chatMessages.appendChild(div);
+    }
 
     if(window.lucide){
 
@@ -680,8 +1512,51 @@ function appendMessage(data){
     scrollMessages();
 }
 
+
 /* =========================
-   MESSAGE DROPDOWN
+   COPY MESSAGE
+========================= */
+
+document.addEventListener(
+
+    "click",
+
+    async (e)=>{
+
+        const copyBtn =
+
+        e.target.closest(
+            ".copy-message-btn"
+        );
+
+        if(!copyBtn){
+
+            return;
+        }
+
+        const message =
+        copyBtn.dataset.message || "";
+
+        try{
+
+            await navigator.clipboard
+            .writeText(message);
+
+            console.log(
+                "Copied"
+            );
+        }
+
+        catch(error){
+
+            console.error(error);
+        }
+    }
+);
+
+
+/* =========================
+   DELETE MESSAGE
 ========================= */
 
 document.addEventListener(
@@ -690,41 +1565,51 @@ document.addEventListener(
 
     (e)=>{
 
-        const btn = e.target.closest(
-            ".chat-message-menu-btn"
+        const deleteBtn =
+
+        e.target.closest(
+            ".delete-message-btn"
         );
 
-        document
-        .querySelectorAll(
-            ".chat-message-dropdown"
-        )
-        .forEach(drop=>{
-
-            if(
-
-                !drop.contains(e.target)
-            ){
-
-                drop.classList.remove(
-                    "active"
-                );
-            }
-        });
-
-        if(!btn){
+        if(!deleteBtn){
 
             return;
         }
 
-        e.stopPropagation();
-
-        const dropdown =
-
-        btn.parentElement.querySelector(
-            ".chat-message-dropdown"
+        const id = Number(
+            deleteBtn.dataset.id
         );
 
-        dropdown.classList.toggle(
+        if(!id){
+
+            return;
+        }
+
+        socket.emit(
+
+            "delete_message",
+
+            {
+                message_id:id
+            }
+        );
+    }
+);
+
+
+/* =========================
+   CHAT MENU
+========================= */
+
+chatMenuBtn?.addEventListener(
+
+    "click",
+
+    (e)=>{
+
+        e.stopPropagation();
+
+        chatMenuDropdown?.classList.toggle(
             "active"
         );
     }
@@ -732,53 +1617,327 @@ document.addEventListener(
 
 
 /* =========================
-   COPY MESSAGE
+   PROFILE MODAL
 ========================= */
 
-window.copyMessage = function(message){
+viewProfileBtn?.addEventListener(
 
-    navigator.clipboard.writeText(
-        message
-    );
-};
+    "click",
 
+    async ()=>{
+
+        if(!activeReceiverId){
+
+            return;
+        }
+
+        try{
+
+            const response =
+            await fetch(
+
+                `/chat/user/${activeReceiverId}`
+            );
+
+            if(!response.ok){
+
+                return;
+            }
+
+            const user =
+            await response.json();
+
+            const modal =
+
+            document.getElementById(
+                "chatProfileModal"
+            );
+
+            if(!modal){
+
+                return;
+            }
+
+            modal.classList.add(
+                "active"
+            );
+
+            const avatar =
+            document.getElementById(
+                "chatProfileAvatar"
+            );
+
+            const banner =
+            document.getElementById(
+                "chatProfileBanner"
+            );
+
+            if(avatar){
+
+                avatar.src =
+                user.profile_image ||
+                "/static/default-avatar.png";
+            }
+
+            if(banner){
+
+                if(user.banner){
+
+                    banner.src =
+                    user.banner;
+
+                    banner.style.display =
+                    "block";
+                }
+
+                else{
+
+                    banner.removeAttribute(
+                        "src"
+                    );
+
+                    banner.style.display =
+                    "none";
+                }
+            }
+
+            const fullNameEl =
+            document.getElementById(
+                "chatProfileFullName"
+            );
+
+            if(fullNameEl){
+
+                fullNameEl.innerText =
+                user.full_name || "-";
+            }
+
+            const firstNameEl =
+            document.getElementById(
+                "chatProfileFirstName"
+            );
+
+            if(firstNameEl){
+
+                firstNameEl.innerText =
+                user.first_name || "-";
+            }
+
+            const lastNameEl =
+            document.getElementById(
+                "chatProfileLastName"
+            );
+
+            if(lastNameEl){
+
+                lastNameEl.innerText =
+                user.last_name || "-";
+            }
+
+            const emailEl =
+            document.getElementById(
+                "chatProfileEmail"
+            );
+
+            if(emailEl){
+
+                emailEl.innerText =
+                user.email || "-";
+            }
+
+            const employeeIdEl =
+            document.getElementById(
+                "chatProfileEmployeeId"
+            );
+
+            if(employeeIdEl){
+
+                employeeIdEl.innerText =
+                user.employee_id || "-";
+            }
+
+            const roleEl =
+            document.getElementById(
+                "chatProfileRole"
+            );
+
+            if(roleEl){
+
+                roleEl.innerText =
+                user.role || "-";
+            }
+        }
+
+        catch(error){
+
+            console.error(
+                "PROFILE LOAD ERROR:",
+                error
+            );
+        }
+    }
+);
 
 /* =========================
-   BACK BUTTON
+   CLOSE PROFILE
 ========================= */
 
 document.getElementById(
-    "backToUsers"
+    "closeChatProfile"
 )?.addEventListener(
 
     "click",
 
     ()=>{
 
-        chatConversation.style.display =
-        "none";
+        document.getElementById(
+            "chatProfileModal"
+        )?.classList.remove(
+            "active"
+        );
     }
 );
 
+
 /* =========================
-   DELETE MESSAGE
+   ESC CLOSE
 ========================= */
 
-window.deleteMessage = function(id){
+document.addEventListener(
 
-    socket.emit(
+    "keydown",
 
-        "delete_message",
+    (e)=>{
 
-        {
-            message_id:id
+        if(e.key !== "Escape"){
+
+            return;
         }
-    );
-};
+
+        document
+        .querySelectorAll(
+            ".chat-message-dropdown"
+        )
+        .forEach(drop=>{
+
+            drop.classList.remove(
+                "active"
+            );
+        });
+
+        chatMenuDropdown?.classList.remove(
+            "active"
+        );
+
+        document.getElementById(
+            "chatProfileModal"
+        )?.classList.remove(
+            "active"
+        );
+    }
+);
 
 
 /* =========================
-   CLEAR CHAT FUNCTION
+   ESCAPE HTML
+========================= */
+
+function escapeHtml(text){
+
+    const div =
+    document.createElement("div");
+
+    div.innerText = text;
+
+    return div.innerHTML;
+}
+
+
+/* =========================
+   AUTO SCROLL
+========================= */
+
+function scrollMessages(){
+
+    requestAnimationFrame(()=>{
+
+        if(!chatMessages){
+
+            return;
+        }
+
+        chatMessages.scrollTop =
+        chatMessages.scrollHeight;
+    });
+}
+
+
+/* =========================
+   MARK READ
+========================= */
+
+function markVisibleMessagesRead(){
+
+    document
+    .querySelectorAll(
+        ".chat-message.other"
+    )
+    .forEach(message=>{
+
+        const id =
+        message.dataset.messageId;
+
+        if(!id){
+
+            return;
+        }
+
+        socket.emit(
+
+            "mark_read",
+
+            {
+                message_id:id
+            }
+        );
+    });
+}
+
+
+/* =========================
+   AUTO READ
+========================= */
+
+chatMessages?.addEventListener(
+
+    "scroll",
+
+    ()=>{
+
+        if(readThrottle){
+
+            return;
+        }
+
+        readThrottle = true;
+
+        markVisibleMessagesRead();
+
+        setTimeout(
+
+            ()=>{
+
+                readThrottle = false;
+            },
+
+            2500
+        );
+    }
+);
+
+
+/* =========================
+   CLEAR CHAT
 ========================= */
 
 window.clearCurrentChat = function(){
@@ -810,163 +1969,147 @@ window.clearCurrentChat = function(){
 
 
 /* =========================
-   ESCAPE HTML
+   ARCHIVE CHAT
 ========================= */
 
-function escapeHtml(text){
-
-    const div =
-    document.createElement("div");
-
-    div.innerText = text;
-
-    return div.innerHTML;
-}
-
-
-/* =========================
-   AUTO SCROLL
-========================= */
-
-function scrollMessages(){
-
-    requestAnimationFrame(()=>{
-
-        chatMessages.scrollTop =
-        chatMessages.scrollHeight;
-    });
-}
-
-
-/* =========================
-   CHAT MENU
-========================= */
-
-const chatMenuBtn =
+const archiveChatBtn =
 document.getElementById(
-    "chatMenuBtn"
+    "archiveChatBtn"
 );
 
-const chatMenuDropdown =
-document.getElementById(
-    "chatMenuDropdown"
-);
-
-chatMenuBtn?.addEventListener(
-
-    "click",
-
-    (e)=>{
-
-        e.stopPropagation();
-
-        chatMenuDropdown.classList.toggle(
-            "active"
-        );
-    }
-);
-
-document.addEventListener(
-
-    "click",
-
-    ()=>{
-
-        chatMenuDropdown?.classList.remove(
-            "active"
-        );
-
-        document
-        .querySelectorAll(
-            ".chat-message-dropdown"
-        )
-        .forEach(drop=>{
-
-            drop.classList.remove(
-                "active"
-            );
-        });
-    }
-);
-
-
-const viewProfileBtn =
-document.getElementById(
-    "viewProfileBtn"
-);
-
-viewProfileBtn?.addEventListener(
+archiveChatBtn?.addEventListener(
 
     "click",
 
     async ()=>{
 
-        const response = await fetch(
+        if(!activeReceiverId){
 
-            `/chat/user/${activeReceiverId}`
-        );
+            return;
+        }
 
-        const user =
-        await response.json();
+        try{
 
-        document.getElementById(
-            "chatProfileModal"
-        ).classList.add("active");
+            const response =
+            await fetch(
 
-        document.getElementById(
-            "chatProfileAvatar"
-        ).src =
-        user.profile_image || "";
+                "/chat/archive",
 
-        document.getElementById(
-            "chatProfileBanner"
-        ).src =
-        user.banner || "";
+                {
 
-        document.getElementById(
-            "chatProfileFullName"
-        ).innerText =
-        user.full_name || "";
+                    method:"POST",
 
-        document.getElementById(
-            "chatProfileFirstName"
-        ).innerText =
-        user.first_name || "";
+                    headers:{
 
-        document.getElementById(
-            "chatProfileLastName"
-        ).innerText =
-        user.last_name || "";
+                        "Content-Type":
+                        "application/json",
 
-        document.getElementById(
-            "chatProfileEmail"
-        ).innerText =
-        user.email || "";
+                        "X-CSRFToken":
+                        csrfToken
+                    },
 
-        document.getElementById(
-            "chatProfileEmployeeId"
-        ).innerText =
-        user.employee_id || "";
+                    body:JSON.stringify({
 
-        document.getElementById(
-            "chatProfileRole"
-        ).innerText =
-        user.role || "";
+                        conversation_id:
+                        activeReceiverId
+                    })
+                }
+            );
+
+            if(!response.ok){
+
+                return;
+            }
+
+            chatConversation?.classList.remove(
+                "active"
+            );
+
+            activeReceiverId = null;
+        }
+
+        catch(error){
+
+            console.error(error);
+        }
     }
 );
 
+
+
+/* =========================
+   CLEAR CHAT BTN
+========================= */
+
+const clearChatBtn =
 document.getElementById(
-    "closeChatProfile"
-)?.addEventListener(
+    "clearChatBtn"
+);
+
+clearChatBtn?.addEventListener(
 
     "click",
 
     ()=>{
 
-        document.getElementById(
-            "chatProfileModal"
-        ).classList.remove(
-            "active"
+        clearCurrentChat();
+    }
+);
+
+
+/* =========================
+   ADD TO GROUP
+========================= */
+
+const addToGroupBtn =
+document.getElementById(
+    "addToGroupBtn"
+);
+
+addToGroupBtn?.addEventListener(
+
+    "click",
+
+    ()=>{
+
+        console.log(
+            "Add to group clicked"
         );
     }
 );
+
+
+/* =========================
+   SOCKET RECONNECT ERROR
+========================= */
+
+socket.io.on(
+
+    "reconnect_error",
+
+    (err)=>{
+
+        console.error(
+            "Reconnect error:",
+            err
+        );
+    }
+);
+
+
+/* =========================
+   INITIAL ICONS
+========================= */
+
+if(window.lucide){
+
+    lucide.createIcons();
+}
+
+
+/* =========================
+   END INIT
+========================= */
+
+}
+

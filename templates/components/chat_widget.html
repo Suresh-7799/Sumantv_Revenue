@@ -4,15 +4,29 @@
 
 </div>
 
-<div class="chat-drawer" id="chatDrawer">
+<div
+class="chat-drawer"
+id="chatDrawer"
+role="dialog"
+aria-modal="true"
+aria-labelledby="chatDrawerTitle">
+
+    <!-- =========================
+         HEADER
+    ========================== -->
 
     <div class="chat-header">
 
-        <h3>
+        <h3 id="chatDrawerTitle">
+
             Team Chat
+
         </h3>
 
-        <button id="closeChatDrawer">
+        <button
+        type="button"
+        id="closeChatDrawer"
+        aria-label="Close Chat">
 
             <i data-lucide="x"></i>
 
@@ -20,14 +34,24 @@
 
     </div>
 
+    <!-- =========================
+         SEARCH
+    ========================== -->
+
     <div class="chat-search-wrapper">
 
         <input
         type="text"
         id="chatUserSearch"
-        placeholder="Search teammates...">
+        placeholder="Search teammates..."
+        autocomplete="off"
+        spellcheck="false">
 
     </div>
+
+    <!-- =========================
+         USERS LIST
+    ========================== -->
 
     <div class="chat-users" id="chatUsers">
 
@@ -38,7 +62,11 @@
 
             data-user-id="{{ user.id }}"
 
-            data-name="{{ user.display_name or user.username }}">
+            data-name="{{ user.display_name or user.username }}"
+
+            data-avatar="{{ user.profile_image or url_for('static', filename='default-avatar.png') }}">
+
+                <!-- USER AVATAR -->
 
                 <div class="chat-user-avatar">
 
@@ -46,7 +74,9 @@
 
                         <img
                         src="{{ user.profile_image }}"
-                        alt="User Avatar">
+                        alt="User Avatar"
+                        loading="lazy"
+                        draggable="false">
 
                     {% else %}
 
@@ -55,6 +85,8 @@
                     {% endif %}
 
                 </div>
+
+                <!-- USER INFO -->
 
                 <div class="chat-user-info">
 
@@ -78,16 +110,28 @@
 
     </div>
 
+    <!-- =========================
+         CHAT CONVERSATION
+    ========================== -->
+
     <div
     class="chat-conversation"
-    id="chatConversation"
-    style="display:none; z-index:30;">
+    id="chatConversation">
 
-        <div class="chat-conversation-header">
+        <!-- =========================
+             TOP BAR
+        ========================== -->
+
+        <div class="chat-header chat-conversation-header">
+
+            <!-- LEFT -->
 
             <div class="chat-header-left">
 
-                <button id="backToUsers">
+                <button
+                type="button"
+                id="backToUsers"
+                aria-label="Back">
 
                     <i data-lucide="arrow-left"></i>
 
@@ -97,12 +141,17 @@
 
                     <img
                     id="activeChatAvatar"
-                    src="/static/images/default-avatar.png"
-                    alt="Active User">
+                    src="{{ url_for('static', filename='default-avatar.png') }}"
+                    alt="Active User"
+                    loading="lazy"
+                    draggable="false">
 
                     <div>
 
                         <strong id="activeChatUser">
+
+                            User
+
                         </strong>
 
                     </div>
@@ -111,43 +160,62 @@
 
             </div>
 
+            <!-- RIGHT -->
+
             <div class="chat-header-right">
 
-                <button id="chatMenuBtn">
+                <button
+                type="button"
+                id="chatMenuBtn"
+                aria-label="Chat Menu">
 
                     <i data-lucide="more-vertical"></i>
 
                 </button>
 
+                <!-- =========================
+                     MENU DROPDOWN
+                ========================== -->
+
                 <div
                 class="chat-menu-dropdown"
                 id="chatMenuDropdown">
 
-                    <button id="viewProfileBtn">
+                    <button
+                    type="button"
+                    id="viewProfileBtn">
 
                         View Profile
 
                     </button>
 
-                    <button id="addToGroupBtn">
+                    <button
+                    type="button"
+                    id="addToGroupBtn">
 
                         Add To Group
 
                     </button>
 
-                    <button id="clearChatBtn">
+                    <button
+                    type="button"
+                    id="clearChatBtn">
 
                         Clear Chat
 
                     </button>
 
-                    <button id="archiveChatBtn">
+                    <button
+                    type="button"
+                    id="archiveChatBtn">
 
                         Archive Chat
 
                     </button>
 
-                    <button id="blockUserBtn">
+                    <button
+                    type="button"
+                    id="blockUserBtn">
 
                         Block User
 
@@ -159,11 +227,36 @@
 
         </div>
 
-        <div class="chat-messages" id="chatMessages">
+        <!-- =========================
+             MESSAGES
+        ========================== -->
+
+        <div
+        class="chat-messages"
+        id="chatMessages">
 
         </div>
 
+        <!-- =========================
+             TYPING INDICATOR
+        ========================== -->
+
+        <div
+        id="chatTypingIndicator"
+        class="chat-typing-indicator"
+        style="display:none;">
+
+            Typing...
+
+        </div>
+
+        <!-- =========================
+             INPUT AREA
+        ========================== -->
+
         <div class="chat-input-wrapper">
+
+            <!-- FILE INPUT -->
 
             <input
             type="file"
@@ -173,30 +266,48 @@
             accept="
             image/*,
             video/*,
+            audio/*,
             application/pdf,
             application/msword,
             application/vnd.openxmlformats-officedocument.wordprocessingml.document,
             application/vnd.ms-excel,
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,
+            application/vnd.ms-powerpoint,
+            application/vnd.openxmlformats-officedocument.presentationml.presentation,
             application/zip,
+            application/x-zip-compressed,
             application/x-rar-compressed,
-            text/plain
+            application/vnd.rar,
+            text/plain,
+            application/json
             ">
+
+            <!-- ATTACH BUTTON -->
 
             <button
             type="button"
-            id="attachChatFile">
+            id="attachChatFile"
+            aria-label="Attach File">
 
                 <i data-lucide="paperclip"></i>
 
             </button>
 
+            <!-- MESSAGE INPUT -->
+
             <input
             type="text"
             id="chatMessageInput"
-            placeholder="Type message...">
+            placeholder="Type message..."
+            autocomplete="off"
+            spellcheck="false">
 
-            <button id="sendChatMessage">
+            <!-- SEND BUTTON -->
+
+            <button
+            type="button"
+            id="sendChatMessage"
+            aria-label="Send Message">
 
                 <i data-lucide="send"></i>
 
