@@ -1898,12 +1898,26 @@ document.addEventListener(
                 "Copied"
 =======
             showChatToast(
+<<<<<<< HEAD
                 "copied"
 >>>>>>> 54e2499 (Updated all project files)
+=======
+                "Copied"
+>>>>>>> daf5210 (Updated all project files)
             );
-        }
 
-        catch(error){
+            document
+            .querySelectorAll(
+                ".chat-message-dropdown"
+            )
+            .forEach(drop=>{
+
+                drop.classList.remove(
+                    "active"
+                );
+            });
+
+        }catch(error){
 
             console.error(error);
         }
