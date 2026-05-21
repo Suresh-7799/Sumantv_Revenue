@@ -1,4 +1,8 @@
 from datetime import datetime
+<<<<<<< HEAD
+=======
+from zoneinfo import ZoneInfo
+>>>>>>> 54e2499 (Updated all project files)
 
 from flask_socketio import (
     emit,
@@ -11,6 +15,21 @@ from flask_login import current_user
 from app.extensions import (
     socketio,
     db
+<<<<<<< HEAD
+)
+
+from app.models.chat_message import (
+    ChatMessage
+)
+
+from app.models.chat_block import (
+    ChatBlock
+)
+
+from app.models.chat_message_visibility import (
+    ChatMessageVisibility
+=======
+>>>>>>> 54e2499 (Updated all project files)
 )
 
 from app.models.chat_message import (
@@ -24,6 +43,50 @@ from app.models.chat_block import (
 from app.models.chat_message_visibility import (
     ChatMessageVisibility
 )
+
+
+# =========================
+# ONLINE USERS
+# =========================
+
+online_users = set()
+
+
+# =========================
+# ROOM BUILDER
+# =========================
+
+def build_room(user1, user2):
+
+    ids = sorted([user1, user2])
+
+    return f"chat_{ids[0]}_{ids[1]}"
+
+
+# =========================
+# TIMESTAMP FORMAT
+# =========================
+
+def format_timestamp(dt):
+
+    local_dt = dt.astimezone(
+        ZoneInfo("Asia/Kolkata")
+    )
+
+    now = datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    )
+
+    if local_dt.date() == now.date():
+
+        return local_dt.strftime(
+            "%I:%M %p"
+        )
+
+    return local_dt.strftime(
+        "%d %b %Y"
+    )
+
 
 
 # =========================
@@ -68,8 +131,50 @@ def handle_send_message(data):
 
     print("MESSAGE RECEIVED:", data)
 
+    if current_user.is_authenticated:
+
+        join_room(
+
+            f"user_{current_user.id}"
+        )
+
+        online_users.add(
+            current_user.id
+        )
+
+
+# =========================
+# JOIN CHAT
+# =========================
+
+@socketio.on("join_chat")
+def join_chat(data):
+
+    if not current_user.is_authenticated:
+        return
+
+    try:
+
+        receiver_id = int(
+            data["receiver_id"]
+        )
+
+    except Exception:
+
+        return
+
+    room = build_room(
+
+        current_user.id,
+
+        receiver_id
+    )
+
+    join_room(room)
+
     emit(
 
+<<<<<<< HEAD
         "receive_message",
 
         data,
@@ -118,6 +223,8 @@ def join_chat(data):
 
     emit(
 
+=======
+>>>>>>> 54e2499 (Updated all project files)
         "joined_chat",
 
         {
@@ -190,7 +297,11 @@ def handle_send_message(data):
             &
 
             (
+<<<<<<< HEAD
                 ChatBlock.blocked_user_id
+=======
+                ChatBlock.blocked_id
+>>>>>>> 54e2499 (Updated all project files)
                 ==
                 receiver_id
             )
@@ -210,7 +321,11 @@ def handle_send_message(data):
             &
 
             (
+<<<<<<< HEAD
                 ChatBlock.blocked_user_id
+=======
+                ChatBlock.blocked_id
+>>>>>>> 54e2499 (Updated all project files)
                 ==
                 current_user.id
             )

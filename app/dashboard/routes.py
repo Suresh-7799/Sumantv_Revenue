@@ -1,6 +1,11 @@
 import os
 import time
 from datetime import datetime
+<<<<<<< HEAD
+=======
+from zoneinfo import ZoneInfo
+from app.models.chat_message_visibility import ChatMessageVisibility
+>>>>>>> 54e2499 (Updated all project files)
 
 from PIL import Image
 
@@ -32,7 +37,12 @@ from app.dashboard import (
 from app.extensions import (
 
     db,
+<<<<<<< HEAD
     limiter
+=======
+    limiter,
+    socketio
+>>>>>>> 54e2499 (Updated all project files)
 )
 
 from app.models.user import (
@@ -442,6 +452,22 @@ def update_profile():
 @login_required
 def get_chat_messages(user_id):
 
+<<<<<<< HEAD
+=======
+    hidden_ids = [
+
+        item.message_id
+
+        for item in
+
+        ChatMessageVisibility.query.filter_by(
+
+            hidden_for_user_id=current_user.id
+
+        ).all()
+    ]
+
+>>>>>>> 54e2499 (Updated all project files)
 
     messages = ChatMessage.query.filter(
 
@@ -506,6 +532,7 @@ def get_chat_messages(user_id):
             msg.file_category,
 
             "created_at":
+<<<<<<< HEAD
             msg.created_at.strftime(
                 "%I:%M %p"
             ) if msg.created_at.date() == datetime.utcnow().date()
@@ -515,6 +542,36 @@ def get_chat_messages(user_id):
             msg.created_at.strftime(
                 "%d %b %Y"
             ),
+=======
+
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime("%I:%M %p")
+
+            if
+
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).date()
+
+            ==
+
+            datetime.now(
+                ZoneInfo("Asia/Kolkata")
+            ).date()
+
+            else
+
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime("%d %b %Y"),
+
+            "full_date":
+
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime("%d %b %Y"),
+>>>>>>> 54e2499 (Updated all project files)
 
             "deleted":
             msg.deleted,
@@ -1116,6 +1173,7 @@ def chat_health():
 # =========================
 
 @dashboard_bp.route(
+<<<<<<< HEAD
     "/chat/delete-message",
     methods=["POST"]
 )
@@ -1123,6 +1181,18 @@ def chat_health():
 def delete_message():
 
     data = request.json
+=======
+
+    "/chat/delete-message",
+
+    methods=["POST"]
+)
+
+@login_required
+def delete_message_everyone():
+
+    data = request.get_json()
+>>>>>>> 54e2499 (Updated all project files)
 
     message_id = data.get(
         "message_id"
@@ -1132,6 +1202,7 @@ def delete_message():
 
         return jsonify({
 
+<<<<<<< HEAD
             "success": False,
 
             "message":
@@ -1145,27 +1216,66 @@ def delete_message():
         sender_id=current_user.id
 
     ).first()
+=======
+            "success": False
+
+        }), 400
+
+    message = ChatMessage.query.get(
+        message_id
+    )
+>>>>>>> 54e2499 (Updated all project files)
 
     if not message:
 
         return jsonify({
 
+<<<<<<< HEAD
             "success": False,
 
             "message":
             "Message not found"
         }), 404
 
+=======
+            "success": False
+
+        }), 404
+
+    if message.sender_id != current_user.id:
+
+        return jsonify({
+
+            "success": False
+
+        }), 403
+
+>>>>>>> 54e2499 (Updated all project files)
     message.deleted = True
 
     db.session.commit()
 
+<<<<<<< HEAD
+=======
+    socketio.emit(
+
+        "message_deleted",
+
+        {
+            "message_id": message.id
+        }
+    )
+
+>>>>>>> 54e2499 (Updated all project files)
     return jsonify({
 
         "success": True
     })
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 54e2499 (Updated all project files)
 # =========================
 # CHAT SEARCH
 # =========================
@@ -1331,6 +1441,7 @@ def get_group_messages(group_id):
             msg.file_type,
 
             "created_at":
+<<<<<<< HEAD
             msg.created_at.strftime(
                 "%I:%M %p"
             ) if msg.created_at.date() == datetime.utcnow().date()
@@ -1340,6 +1451,19 @@ def get_group_messages(group_id):
             msg.created_at.strftime(
                 "%d %b %Y"
             )
+=======
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime("%I:%M %p")
+
+            if msg.created_at.date() == datetime.now(ZoneInfo("Asia/Kolkata")).date()
+
+            else
+
+            msg.created_at.astimezone(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime("%I:%M %p")
+>>>>>>> 54e2499 (Updated all project files)
         })
 
     return jsonify(results)
@@ -1415,3 +1539,160 @@ def blocked_users():
         })
 
     return jsonify(results)
+<<<<<<< HEAD
+=======
+
+
+
+# =========================
+# DELETE FOR ME
+# =========================
+
+@dashboard_bp.route(
+
+    "/chat/delete-for-me",
+
+    methods=["POST"]
+)
+
+@login_required
+def delete_message_for_me():
+
+    data = request.get_json()
+
+    message_id = data.get(
+        "message_id"
+    )
+
+    if not message_id:
+
+        return jsonify({
+
+            "success": False
+
+        }), 400
+
+    message = ChatMessage.query.get(
+        message_id
+    )
+
+    if not message:
+
+        return jsonify({
+
+            "success": False
+
+        }), 404
+
+    existing = ChatMessageVisibility.query.filter_by(
+
+        message_id=message.id,
+
+        hidden_for_user_id=current_user.id
+
+    ).first()
+
+    if existing:
+
+        return jsonify({
+
+            "success": True
+        })
+
+    visibility = ChatMessageVisibility(
+
+        message_id=message.id,
+
+        hidden_for_user_id=current_user.id
+    )
+
+    db.session.add(
+        visibility
+    )
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+# =========================
+# FORWARD MESSAGE
+# =========================
+
+@dashboard_bp.route(
+
+    "/chat/forward-message",
+
+    methods=["POST"]
+)
+
+@login_required
+def forward_message():
+
+    data = request.get_json()
+
+    receiver_id = data.get(
+        "receiver_id"
+    )
+
+    message = data.get(
+        "message"
+    )
+
+    if not receiver_id or not message:
+
+        return jsonify({
+
+            "success":False
+
+        }),400
+
+    new_message = ChatMessage(
+
+        sender_id=current_user.id,
+
+        receiver_id=receiver_id,
+
+        message=message
+    )
+
+    db.session.add(
+        new_message
+    )
+
+    db.session.commit()
+
+    socketio.emit(
+
+        "new_message",
+
+        {
+
+            "id":new_message.id,
+
+            "sender_id":
+            current_user.id,
+
+            "receiver_id":
+            receiver_id,
+
+            "message":
+            message,
+
+            "created_at":
+            new_message.created_at.strftime(
+                "%I:%M %p"
+            )
+        },
+
+        room=f"user_{receiver_id}"
+    )
+
+    return jsonify({
+
+        "success":True
+    })
+>>>>>>> 54e2499 (Updated all project files)

@@ -53,9 +53,15 @@ socketio = SocketIO(
 
     cors_allowed_origins="*",
 
+<<<<<<< HEAD
     async_mode="eventlet",
 
     manage_session=True,
+=======
+    async_mode="threading",
+
+    manage_session=False,
+>>>>>>> 54e2499 (Updated all project files)
 
     ping_timeout=120,
 

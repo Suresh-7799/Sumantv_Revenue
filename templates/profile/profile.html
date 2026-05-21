@@ -5,11 +5,22 @@ Profile
 {% endblock %}
 
 {% block extra_css %}
+<<<<<<< HEAD
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
 
 {% block content %}
 
+=======
+{% block content %}
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/profile.css') }}">
+
+{% endblock %}
+
+>>>>>>> 54e2499 (Updated all project files)
 <div class="app-shell">
 
     {% include "components/sidebar.html" %}
@@ -20,6 +31,10 @@ Profile
 
             <div class="page-container">
 
+<<<<<<< HEAD
+=======
+{% block dashboard_content %}
+>>>>>>> 54e2499 (Updated all project files)
 
 <section class="profile-page">
 <div
@@ -32,12 +47,21 @@ class="toast-container"></div>
         class="profile-cover"
 
         {% if current_user.banner_image %}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 54e2499 (Updated all project files)
         style="
         background:
         url('{{ current_user.banner_image }}')
         center/cover no-repeat;
         "
+<<<<<<< HEAD
         {% endif %}>
+=======
+        {% endif %}
+        ">
+>>>>>>> 54e2499 (Updated all project files)
 
             <button
             type="button"
@@ -66,7 +90,11 @@ class="toast-container"></div>
 
                     <img
                     id="mainProfileAvatar"
+<<<<<<< HEAD
                     src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='default-avatar.png') }}{% endif %}"
+=======
+                    src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+>>>>>>> 54e2499 (Updated all project files)
                     alt="Profile">
 
                     <button
@@ -127,7 +155,11 @@ class="toast-container"></div>
 
                         <img
                         id="currentPreviewImage"
+<<<<<<< HEAD
                         src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='default-avatar.png') }}{% endif %}"
+=======
+                        src="{% if current_user.profile_image %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/default-avatar.png') }}{% endif %}"
+>>>>>>> 54e2499 (Updated all project files)
                         alt="Current DP">
 
                     </div>
@@ -726,4 +758,9 @@ id="cropperModal">
 
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 
+<<<<<<< HEAD
 {% endblock %}
+=======
+{% endblock %}
+{% endblock %}
+>>>>>>> 54e2499 (Updated all project files)

@@ -10,8 +10,11 @@ app = create_app()
 
 if __name__ == "__main__":
 
+<<<<<<< HEAD
     app = create_app()
 
+=======
+>>>>>>> 54e2499 (Updated all project files)
     socketio.run(
 
         app,
