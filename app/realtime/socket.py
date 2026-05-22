@@ -1,8 +1,7 @@
 from datetime import datetime
-<<<<<<< HEAD
-=======
+
 from zoneinfo import ZoneInfo
->>>>>>> 54e2499 (Updated all project files)
+
 
 from flask_socketio import (
     emit,
@@ -15,7 +14,7 @@ from flask_login import current_user
 from app.extensions import (
     socketio,
     db
-<<<<<<< HEAD
+
 )
 
 from app.models.chat_message import (
@@ -28,8 +27,8 @@ from app.models.chat_block import (
 
 from app.models.chat_message_visibility import (
     ChatMessageVisibility
-=======
->>>>>>> 54e2499 (Updated all project files)
+
+
 )
 
 from app.models.chat_message import (
@@ -174,7 +173,7 @@ def join_chat(data):
 
     emit(
 
-<<<<<<< HEAD
+
         "receive_message",
 
         data,
@@ -223,8 +222,8 @@ def join_chat(data):
 
     emit(
 
-=======
->>>>>>> 54e2499 (Updated all project files)
+
+
         "joined_chat",
 
         {
@@ -297,11 +296,7 @@ def handle_send_message(data):
             &
 
             (
-<<<<<<< HEAD
-                ChatBlock.blocked_user_id
-=======
                 ChatBlock.blocked_id
->>>>>>> 54e2499 (Updated all project files)
                 ==
                 receiver_id
             )
@@ -321,11 +316,7 @@ def handle_send_message(data):
             &
 
             (
-<<<<<<< HEAD
-                ChatBlock.blocked_user_id
-=======
                 ChatBlock.blocked_id
->>>>>>> 54e2499 (Updated all project files)
                 ==
                 current_user.id
             )
@@ -448,6 +439,7 @@ def handle_send_message(data):
 
         room=room
     )
+
 # =========================
 # DELETE MESSAGE
 # =========================

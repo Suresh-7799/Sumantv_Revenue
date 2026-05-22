@@ -94,8 +94,6 @@ def create_app():
     )
 
     app.config.from_object(DevelopmentConfig)
-<<<<<<< HEAD
-=======
 
     from app.models.chat_conversation import ChatConversation
     from app.models.chat_message import ChatMessage
@@ -104,7 +102,6 @@ def create_app():
     from app.models.chat_message_visibility import ChatMessageVisibility
     from app.models.chat_group import ChatGroup
     from app.models.chat_group_member import ChatGroupMember
->>>>>>> 54e2499 (Updated all project files)
 
     initialize_extensions(app)
 

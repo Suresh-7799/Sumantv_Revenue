@@ -14,8 +14,6 @@ Flask-SocketIO
 celery
 Flask-Limiter
 Pillow
-<<<<<<< HEAD
-=======
 gevent
 gevent-websocket
->>>>>>> 54e2499 (Updated all project files)
+

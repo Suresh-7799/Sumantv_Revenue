@@ -8,199 +8,186 @@ window.addEventListener(
     }
 );
 
-<<<<<<< HEAD
 function initializeChat(){
 
-    console.log("CHAT INIT STARTED");
-
-}
-=======
->>>>>>> 54e2499 (Updated all project files)
-
-function initializeChat(){
-
-/* =========================
-   SAFETY CHECKS
-========================= */
-
-if(!window.socket){
-
-    console.error(
-        "Socket missing"
+    console.log(
+        "CHAT INIT STARTED"
     );
 
-    return;
-}
+    /* =========================
+       SAFETY CHECKS
+    ========================= */
 
-if(typeof CURRENT_USER_ID === "undefined"){
+    if(!window.socket){
 
-    console.error(
-        "CURRENT_USER_ID missing"
-    );
-
-    return;
-}
-
-
-/* =========================
-   GLOBALS
-========================= */
-
-const socket = window.socket;
-
-const csrfToken = document
-.querySelector(
-    'meta[name="csrf-token"]'
-)
-?.getAttribute("content");
-
-
-/* =========================
-   ELEMENTS
-========================= */
-
-const chatFab =
-document.getElementById(
-    "chatFab"
-);
-
-const chatDrawer =
-document.getElementById(
-    "chatDrawer"
-);
-
-const closeChatDrawer =
-document.getElementById(
-    "closeChatDrawer"
-);
-
-const chatConversation =
-document.getElementById(
-    "chatConversation"
-);
-
-const activeChatUser =
-document.getElementById(
-    "activeChatUser"
-);
-
-const chatMessages =
-document.getElementById(
-    "chatMessages"
-);
-
-const sendChatMessage =
-document.getElementById(
-    "sendChatMessage"
-);
-
-const chatMessageInput =
-document.getElementById(
-    "chatMessageInput"
-);
-
-const chatUserSearch =
-document.getElementById(
-    "chatUserSearch"
-);
-
-const attachChatFile =
-document.getElementById(
-    "attachChatFile"
-);
-
-const chatFileInput =
-document.getElementById(
-    "chatFileInput"
-);
-
-const chatMenuBtn =
-document.getElementById(
-    "chatMenuBtn"
-);
-
-const chatMenuDropdown =
-document.getElementById(
-    "chatMenuDropdown"
-);
-
-const backToUsers =
-document.getElementById(
-    "backToUsers"
-);
-
-const viewProfileBtn =
-document.getElementById(
-    "viewProfileBtn"
-);
-
-
-/* =========================
-   STATES
-========================= */
-
-let activeReceiverId = null;
-
-let uploadedFile = null;
-
-let uploadInProgress = false;
-
-let readThrottle = false;
-
-let typingTimeout;
-
-<<<<<<< HEAD
-=======
-window.chatUsers = [];
-
->>>>>>> 54e2499 (Updated all project files)
-
-/* =========================
-   SOCKET CLEANUP
-========================= */
-
-socket.off("connect");
-socket.off("receive_message");
-socket.off("message_deleted");
-socket.off("chat_cleared");
-socket.off("user_typing");
-socket.off("message_read");
-socket.off("chat_error");
-socket.off("disconnect");
-socket.off("reconnect");
-
-
-/* =========================
-   SOCKET CONNECT
-========================= */
-
-socket.on(
-
-    "connect",
-
-    async ()=>{
-
-        console.log(
-            "SOCKET CONNECTED:",
-            socket.id
+        console.error(
+            "Socket missing"
         );
 
-        if(activeReceiverId){
+        return;
+    }
 
-            socket.emit(
+    if(typeof CURRENT_USER_ID === "undefined"){
 
-                "join_chat",
+        console.error(
+            "CURRENT_USER_ID missing"
+        );
 
-                {
-                    receiver_id:
-                    activeReceiverId
-                }
+        return;
+    }
+
+    /* =========================
+       GLOBALS
+    ========================= */
+
+    const socket = window.socket;
+
+    const csrfToken = document
+    .querySelector(
+        'meta[name="csrf-token"]'
+    )
+    ?.getAttribute("content");
+
+    /* =========================
+       ELEMENTS
+    ========================= */
+
+    const chatFab =
+    document.getElementById(
+        "chatFab"
+    );
+
+    const chatDrawer =
+    document.getElementById(
+        "chatDrawer"
+    );
+
+    const closeChatDrawer =
+    document.getElementById(
+        "closeChatDrawer"
+    );
+
+    const chatConversation =
+    document.getElementById(
+        "chatConversation"
+    );
+
+    const activeChatUser =
+    document.getElementById(
+        "activeChatUser"
+    );
+
+    const chatMessages =
+    document.getElementById(
+        "chatMessages"
+    );
+
+    const sendChatMessage =
+    document.getElementById(
+        "sendChatMessage"
+    );
+
+    const chatMessageInput =
+    document.getElementById(
+        "chatMessageInput"
+    );
+
+    const chatUserSearch =
+    document.getElementById(
+        "chatUserSearch"
+    );
+
+    const attachChatFile =
+    document.getElementById(
+        "attachChatFile"
+    );
+
+    const chatFileInput =
+    document.getElementById(
+        "chatFileInput"
+    );
+
+    const chatMenuBtn =
+    document.getElementById(
+        "chatMenuBtn"
+    );
+
+    const chatMenuDropdown =
+    document.getElementById(
+        "chatMenuDropdown"
+    );
+
+    const backToUsers =
+    document.getElementById(
+        "backToUsers"
+    );
+
+    const viewProfileBtn =
+    document.getElementById(
+        "viewProfileBtn"
+    );
+
+    /* =========================
+       STATES
+    ========================= */
+
+    let activeReceiverId = null;
+
+    let uploadedFile = null;
+
+    let uploadInProgress = false;
+
+    let readThrottle = false;
+
+    let typingTimeout;
+
+    window.chatUsers = [];
+
+    /* =========================
+       SOCKET CLEANUP
+    ========================= */
+
+    socket.off("connect");
+    socket.off("receive_message");
+    socket.off("message_deleted");
+    socket.off("chat_cleared");
+    socket.off("user_typing");
+    socket.off("message_read");
+    socket.off("chat_error");
+    socket.off("disconnect");
+    socket.off("reconnect");
+
+    /* =========================
+       SOCKET CONNECT
+    ========================= */
+
+    socket.on(
+
+        "connect",
+
+        async ()=>{
+
+            console.log(
+                "SOCKET CONNECTED:",
+                socket.id
             );
 
-            await loadMessages();
+            if(activeReceiverId){
+
+                socket.emit(
+
+                    "join_chat",
+
+                    {
+                        receiver_id:
+                        activeReceiverId
+                    }
+                );
+
+                await loadMessages();
+            }
         }
-    }
-);
+    );
 
 
 /* =========================
@@ -254,28 +241,13 @@ socket.on(
 /* =========================
    MESSAGE DELETE
 ========================= */
-<<<<<<< HEAD
 
-=======
->>>>>>> 54e2499 (Updated all project files)
 socket.on(
 
     "message_deleted",
 
     (data)=>{
 
-<<<<<<< HEAD
-        const element =
-
-        document.querySelector(
-
-            `[data-message-id="${data.message_id}"]`
-        );
-
-        if(element){
-
-            element.remove();
-=======
         const message = document.querySelector(
 
             `.chat-message[data-message-id="${data.message_id}"]`
@@ -284,7 +256,6 @@ socket.on(
         if(message){
 
             message.remove();
->>>>>>> 54e2499 (Updated all project files)
         }
     }
 );
@@ -443,11 +414,16 @@ socket.on(
                 }
             );
 
-            setTimeout(async ()=>{
+            setTimeout(
 
-                await loadMessages();
+                async ()=>{
 
-            }, 300);
+                    await loadMessages();
+
+                },
+
+                300
+            );
         }
     }
 );
@@ -463,12 +439,9 @@ if(chatFab){
 
         e.stopPropagation();
 
-        if(chatDrawer){
-
-            chatDrawer.classList.toggle(
-                "active"
-            );
-        }
+        chatDrawer?.classList.toggle(
+            "active"
+        );
     };
 }
 
@@ -477,46 +450,11 @@ if(chatFab){
    OUTSIDE CLICK
 ========================= */
 
-<<<<<<< HEAD
-window.onclick = (e)=>{
-
-    const clickedFab = e.target.closest(
-        "#chatFab"
-    );
-
-    const clickedDrawer = e.target.closest(
-        "#chatDrawer"
-    );
-
-    if(
-        clickedFab
-        ||
-        clickedDrawer
-    ){
-
-        return;
-    }
-
-    chatDrawer?.classList.remove(
-        "active"
-    );
-};
-
-=======
 window.addEventListener(
 
     "click",
 
     (e)=>{
-
-        const popup = e.target.closest(
-            "#chatDeletePopup"
-        );
-
-        if(popup){
-
-            return;
-        }
 
         const clickedFab = e.target.closest(
             "#chatFab"
@@ -526,10 +464,16 @@ window.addEventListener(
             "#chatDrawer"
         );
 
+        const popup = e.target.closest(
+            "#chatDeletePopup"
+        );
+
         if(
             clickedFab
             ||
             clickedDrawer
+            ||
+            popup
         ){
 
             return;
@@ -538,9 +482,13 @@ window.addEventListener(
         chatDrawer?.classList.remove(
             "active"
         );
+
+        chatMenuDropdown?.classList.remove(
+            "active"
+        );
     }
 );
->>>>>>> 54e2499 (Updated all project files)
+
 
 /* =========================
    CLOSE DRAWER
@@ -610,9 +558,10 @@ chatUserSearch?.addEventListener(
 
             const name =
 
-            (
-                item.dataset.name || ""
-            ).toLowerCase();
+                (
+                    item.dataset.name || ""
+                )
+                .toLowerCase();
 
             item.style.display =
 
@@ -626,6 +575,10 @@ chatUserSearch?.addEventListener(
 );
 
 
+/* =========================
+   LOAD MESSAGES
+========================= */
+
 async function loadMessages(){
 
     if(!activeReceiverId){
@@ -636,6 +589,7 @@ async function loadMessages(){
     try{
 
         const response = await fetch(
+
             `/chat/messages/${activeReceiverId}`
         );
 
@@ -644,7 +598,8 @@ async function loadMessages(){
             return;
         }
 
-        const messages = await response.json();
+        const messages =
+        await response.json();
 
         if(!Array.isArray(messages)){
 
@@ -715,37 +670,45 @@ document.addEventListener(
             "chatProfileModal"
         );
 
-
         /* =========================
            OPEN USER CHAT
         ========================= */
 
         if(userItem){
 
-<<<<<<< HEAD
-=======
-            window.chatUsers.push({
-
-                id:
-                userItem.dataset.userId,
-
-                username:
-                userItem.dataset.name,
-
-                avatar:
-                userItem.dataset.avatar
-            });
-
->>>>>>> 54e2499 (Updated all project files)
-            activeReceiverId = Number(
+            const userId = Number(
                 userItem.dataset.userId
             );
+
+            const existingUser =
+
+                window.chatUsers.find(
+                    user => Number(user.id) === userId
+                );
+
+            if(!existingUser){
+
+                window.chatUsers.push({
+
+                    id:
+                    userId,
+
+                    username:
+                    userItem.dataset.name,
+
+                    avatar:
+                    userItem.dataset.avatar
+                });
+            }
+
+            activeReceiverId = userId;
 
             if(activeChatUser){
 
                 activeChatUser.innerText =
                 userItem.dataset.name || "";
             }
+
             const avatar =
             document.getElementById(
                 "activeChatAvatar"
@@ -786,14 +749,11 @@ document.addEventListener(
 
             const dropdown =
 
-<<<<<<< HEAD
-            messageMenuBtn.parentElement
-=======
             messageMenuBtn
             .closest(
                 ".chat-message-actions"
             )
->>>>>>> 54e2499 (Updated all project files)
+
             ?.querySelector(
                 ".chat-message-dropdown"
             );
@@ -812,22 +772,12 @@ document.addEventListener(
                 }
             });
 
-<<<<<<< HEAD
             dropdown?.classList.toggle(
                 "active"
             );
-=======
-            if(dropdown){
-
-                dropdown.classList.toggle(
-                    "active"
-                );
-            }
->>>>>>> 54e2499 (Updated all project files)
 
             return;
         }
-
 
         /* =========================
            CLOSE MENUS
@@ -848,7 +798,6 @@ document.addEventListener(
             "active"
         );
 
-
         /* =========================
            CLOSE PROFILE MODAL
         ========================= */
@@ -856,9 +805,7 @@ document.addEventListener(
         if(
 
             profileModal
-
             &&
-
             e.target === profileModal
         ){
 
@@ -871,7 +818,7 @@ document.addEventListener(
 
 
 /* =========================
-   LOAD MESSAGES
+   VIEW PROFILE
 ========================= */
 
 viewProfileBtn?.addEventListener(
@@ -887,12 +834,7 @@ viewProfileBtn?.addEventListener(
 
         try{
 
-<<<<<<< HEAD
-            const response =
-            await fetch(
-=======
             const response = await fetch(
->>>>>>> 54e2499 (Updated all project files)
 
                 `/chat/user/${activeReceiverId}`
             );
@@ -933,8 +875,10 @@ viewProfileBtn?.addEventListener(
             if(avatar){
 
                 avatar.src =
-                user.profile_image ||
-                "/static/default-avatar.png";
+
+                    user.profile_image ||
+
+                    "/static/default-avatar.png";
             }
 
             if(banner){
@@ -1102,7 +1046,9 @@ chatFileInput?.addEventListener(
             alert(
                 "Unsupported file type"
             );
-                chatFileInput.value = "";
+
+            chatFileInput.value = "";
+
             return;
         }
 
@@ -1111,7 +1057,9 @@ chatFileInput?.addEventListener(
             alert(
                 "Max upload size is 30MB"
             );
-                chatFileInput.value = "";
+
+            chatFileInput.value = "";
+
             return;
         }
 
@@ -1142,7 +1090,9 @@ async function uploadChatFile(file){
         new XMLHttpRequest();
 
         xhr.open(
+
             "POST",
+
             "/chat/upload"
         );
 
@@ -1171,7 +1121,9 @@ async function uploadChatFile(file){
                     );
 
                     console.log(
+
                         "UPLOAD:",
+
                         percent + "%"
                     );
                 }
@@ -1191,9 +1143,13 @@ async function uploadChatFile(file){
                 if(!data.success){
 
                     alert(
+
                         data.message ||
+
                         "Upload failed"
                     );
+
+                    chatFileInput.value = "";
 
                     return;
                 }
@@ -1202,7 +1158,9 @@ async function uploadChatFile(file){
                 data.file;
 
                 console.log(
+
                     "FILE READY:",
+
                     uploadedFile
                 );
 
@@ -1211,13 +1169,19 @@ async function uploadChatFile(file){
 
             catch(error){
 
-                console.error(error);
+                console.error(
+                    error
+                );
+
+                chatFileInput.value = "";
             }
         };
 
         xhr.onerror = ()=>{
 
             uploadInProgress = false;
+
+            chatFileInput.value = "";
 
             alert(
                 "Upload failed"
@@ -1231,7 +1195,11 @@ async function uploadChatFile(file){
 
         uploadInProgress = false;
 
-        console.error(error);
+        chatFileInput.value = "";
+
+        console.error(
+            error
+        );
     }
 }
 
@@ -1249,8 +1217,10 @@ function sendMessage(){
 
     const message =
 
-    chatMessageInput.value
-    .trim();
+        (
+            chatMessageInput?.value || ""
+        )
+        .trim();
 
     if(message.length > 5000){
 
@@ -1264,9 +1234,7 @@ function sendMessage(){
     if(
 
         !message
-
         &&
-
         !uploadedFile
     ){
 
@@ -1287,12 +1255,18 @@ function sendMessage(){
         return;
     }
 
-    console.log("SENDING MESSAGE", {
+    console.log(
 
-        receiver_id: activeReceiverId,
+        "SENDING MESSAGE",
 
-        message: message
-    });
+        {
+            receiver_id:
+            activeReceiverId,
+
+            message:
+            message
+        }
+    );
 
     socket.emit(
 
@@ -1311,7 +1285,10 @@ function sendMessage(){
         }
     );
 
-    chatMessageInput.value = "";
+    if(chatMessageInput){
+
+        chatMessageInput.value = "";
+    }
 
     uploadedFile = null;
 
@@ -1330,7 +1307,10 @@ sendChatMessage?.addEventListener(
 
     "click",
 
-    sendMessage
+    ()=>{
+
+        sendMessage();
+    }
 );
 
 
@@ -1347,9 +1327,7 @@ chatMessageInput?.addEventListener(
         if(
 
             e.key === "Enter"
-
             &&
-
             !e.shiftKey
         ){
 
@@ -1378,6 +1356,11 @@ chatMessageInput?.addEventListener(
             return;
         }
 
+        if(!socket.connected){
+
+            return;
+        }
+
         if(typingThrottle){
 
             return;
@@ -1395,22 +1378,25 @@ chatMessageInput?.addEventListener(
             }
         );
 
-        setTimeout(()=>{
+        setTimeout(
 
-            typingThrottle = false;
+            ()=>{
 
-        }, 1200);
+                typingThrottle = false;
+
+            },
+
+            1200
+        );
     }
 );
 
 /* =========================
    APPEND MESSAGE
 ========================= */
-<<<<<<< HEAD
 
-=======
 let lastMessageDate = null;
->>>>>>> 54e2499 (Updated all project files)
+
 function appendMessage(data){
 
     if(!data){
@@ -1423,11 +1409,15 @@ function appendMessage(data){
         return;
     }
 
-<<<<<<< HEAD
-=======
-    const currentDate = data.full_date || "";
+    const currentDate =
+    data.full_date || "";
 
-    if(currentDate && currentDate !== lastMessageDate){
+    if(
+
+        currentDate
+        &&
+        currentDate !== lastMessageDate
+    ){
 
         const separator =
         document.createElement("div");
@@ -1439,12 +1429,14 @@ function appendMessage(data){
             <span>${currentDate}</span>
         `;
 
-        chatMessages?.appendChild(separator);
+        chatMessages?.appendChild(
+            separator
+        );
 
-        lastMessageDate = currentDate;
+        lastMessageDate =
+        currentDate;
     }
 
->>>>>>> 54e2499 (Updated all project files)
     if(data.id){
 
         const existing =
@@ -1463,26 +1455,32 @@ function appendMessage(data){
     const div =
     document.createElement("div");
 
-    div.className =
+    const isMine =
 
         Number(data.sender_id)
 
         ===
 
-        Number(CURRENT_USER_ID)
+        Number(CURRENT_USER_ID);
 
-<<<<<<< HEAD
-        ? "chat-message me"
+    div.className =
 
-        : "chat-message other";
-=======
-        ? "chat-message sent"
+        isMine
 
-        : "chat-message received";
->>>>>>> 54e2499 (Updated all project files)
+        ?
+
+        "chat-message me"
+
+        :
+
+        "chat-message other";
 
     div.dataset.messageId =
     data.id;
+
+    /* =========================
+       FILE HTML
+    ========================= */
 
     let fileHtml = "";
 
@@ -1508,7 +1506,8 @@ function appendMessage(data){
 
                 <img
                 src="${data.file_url}"
-                class="chat-image-preview">
+                class="chat-image-preview"
+                alt="Image">
             `;
         }
 
@@ -1522,7 +1521,6 @@ function appendMessage(data){
 
                     <source
                     src="${data.file_url}">
-
                 </video>
             `;
         }
@@ -1546,13 +1544,13 @@ function appendMessage(data){
         }
     }
 
+    /* =========================
+       ACTIONS MENU
+    ========================= */
+
     const actionsMenu =
 
-        Number(data.sender_id)
-
-        ===
-
-        Number(CURRENT_USER_ID)
+        isMine
 
         ?
 
@@ -1564,11 +1562,7 @@ function appendMessage(data){
             class="chat-message-menu-btn"
             type="button">
 
-<<<<<<< HEAD
                 <i data-lucide="more-horizontal"></i>
-=======
-                <i data-lucide="chevron-down"></i>
->>>>>>> 54e2499 (Updated all project files)
 
             </button>
 
@@ -1586,8 +1580,6 @@ function appendMessage(data){
 
                 <button
                 type="button"
-<<<<<<< HEAD
-=======
                 class="forward-message-btn"
                 data-id="${data.id}">
 
@@ -1597,7 +1589,6 @@ function appendMessage(data){
 
                 <button
                 type="button"
->>>>>>> 54e2499 (Updated all project files)
                 class="delete-message-btn"
                 data-id="${data.id}">
 
@@ -1615,65 +1606,30 @@ function appendMessage(data){
 
         "";
 
+    /* =========================
+       MESSAGE HTML
+    ========================= */
+
     div.innerHTML = `
 
         <div class="chat-message-bubble">
 
-<<<<<<< HEAD
             ${actionsMenu}
 
             ${fileHtml}
 
-            <div class="chat-message-text">
+            ${data.message ? `
 
-                ${escapeHtml(
-                    data.message || ""
-                )}
+                <div class="chat-message-text">
 
-            </div>
+                    ${escapeHtml(
+                        data.message
+                    )}
 
-=======
-            <div class="chat-message-content">
+                </div>
 
-                ${data.file_url ? `
+            ` : ""}
 
-                    <div class="chat-file-message">
-
-                        <div class="chat-file-row">
-
-                            <i data-lucide="paperclip"></i>
-
-                            <span>
-
-                                ${escapeHtml(
-                                    data.file_name || "File"
-                                )}
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                ` : ""}
-
-                ${data.message ? `
-
-                    <div class="chat-message-text">
-
-                        ${escapeHtml(
-                            data.message
-                        )}
-
-                    </div>
-
-                ` : ""}
-
-            </div>
-
-            ${actionsMenu}
-
->>>>>>> 54e2499 (Updated all project files)
             <div class="chat-message-footer">
 
                 <div class="chat-message-time">
@@ -1689,7 +1645,9 @@ function appendMessage(data){
 
     if(chatMessages){
 
-        chatMessages.appendChild(div);
+        chatMessages.appendChild(
+            div
+        );
     }
 
     if(window.lucide){
@@ -1702,8 +1660,6 @@ function appendMessage(data){
 
 
 /* =========================
-<<<<<<< HEAD
-=======
    DELETE POPUP
 ========================= */
 
@@ -1718,9 +1674,12 @@ function openDeletePopup(messageId){
         popup.remove();
     }
 
-    popup = document.createElement("div");
+    popup = document.createElement(
+        "div"
+    );
 
-    popup.id = "chatDeletePopup";
+    popup.id =
+    "chatDeletePopup";
 
     popup.className =
     "chat-delete-popup active";
@@ -1770,7 +1729,7 @@ function openDeletePopup(messageId){
         </div>
     `;
 
-    chatConversation.appendChild(
+    chatConversation?.appendChild(
         popup
     );
 
@@ -1778,9 +1737,11 @@ function openDeletePopup(messageId){
        DELETE / UNSEND
     ========================= */
 
-    popup.querySelectorAll(
+    popup
+    .querySelectorAll(
         ".chat-delete-option"
-    ).forEach(btn=>{
+    )
+    .forEach(btn=>{
 
         btn.onclick = async (e)=>{
 
@@ -1806,27 +1767,36 @@ function openDeletePopup(messageId){
             try{
 
                 const response =
-                await fetch(endpoint,{
+                await fetch(
 
-                    method:"POST",
+                    endpoint,
 
-                    headers:{
-                        "Content-Type":
-                        "application/json",
+                    {
 
-                        "X-CSRFToken":
-                         csrfToken
-                    },
+                        method:"POST",
 
-                    body:JSON.stringify({
+                        headers:{
 
-                        message_id:messageId
-                    })
-                });
+                            "Content-Type":
+                            "application/json",
+
+                            "X-CSRFToken":
+                            csrfToken
+                        },
+
+                        body:JSON.stringify({
+
+                            message_id:
+                            messageId
+                        })
+                    }
+                );
 
                 if(response.ok){
 
-                    const messageElement = document.querySelector(
+                    const messageElement =
+
+                    document.querySelector(
 
                         `.chat-message[data-message-id="${messageId}"]`
                     );
@@ -1839,9 +1809,19 @@ function openDeletePopup(messageId){
                     popup.remove();
                 }
 
-            }catch(error){
+                else{
 
-                console.error(error);
+                    alert(
+                        "Delete failed"
+                    );
+                }
+            }
+
+            catch(error){
+
+                console.error(
+                    error
+                );
             }
         };
     });
@@ -1864,7 +1844,6 @@ function openDeletePopup(messageId){
 
 
 /* =========================
->>>>>>> 54e2499 (Updated all project files)
    COPY MESSAGE
 ========================= */
 
@@ -1886,24 +1865,20 @@ document.addEventListener(
         }
 
         const message =
-        copyBtn.dataset.message || "";
+
+            copyBtn.dataset.message || "";
 
         try{
 
             await navigator.clipboard
             .writeText(message);
 
-<<<<<<< HEAD
             console.log(
                 "Copied"
-=======
+            );
+
             showChatToast(
-<<<<<<< HEAD
-                "copied"
->>>>>>> 54e2499 (Updated all project files)
-=======
                 "Copied"
->>>>>>> daf5210 (Updated all project files)
             );
 
             document
@@ -1916,19 +1891,19 @@ document.addEventListener(
                     "active"
                 );
             });
+        }
 
-        }catch(error){
+        catch(error){
 
-            console.error(error);
+            console.error(
+                error
+            );
         }
     }
 );
 
 
 /* =========================
-<<<<<<< HEAD
-   DELETE MESSAGE
-=======
    CHAT TOAST
 ========================= */
 
@@ -1953,31 +1928,46 @@ function showChatToast(message){
     toast.innerText =
     message;
 
-    chatConversation.appendChild(
+    chatConversation?.appendChild(
         toast
     );
 
-    setTimeout(()=>{
+    setTimeout(
 
-        toast.classList.add(
-            "active"
-        );
+        ()=>{
 
-    },10);
+            toast.classList.add(
+                "active"
+            );
 
-    setTimeout(()=>{
+        },
 
-        toast.classList.remove(
-            "active"
-        );
+        10
+    );
 
-        setTimeout(()=>{
+    setTimeout(
 
-            toast.remove();
+        ()=>{
 
-        },200);
+            toast.classList.remove(
+                "active"
+            );
 
-    },1600);
+            setTimeout(
+
+                ()=>{
+
+                    toast.remove();
+
+                },
+
+                200
+            );
+
+        },
+
+        1600
+    );
 }
 
 /* =========================
@@ -2013,7 +2003,9 @@ function openForwardPanel(
     });
 
     const panel =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
 
     panel.className =
     "chat-forward-panel";
@@ -2036,11 +2028,8 @@ function openForwardPanel(
         </div>
 
         <input
-
         type="text"
-
         class="chat-forward-search"
-
         placeholder="Search users..."
         />
 
@@ -2057,9 +2046,8 @@ function openForwardPanel(
                 data-name="${user.username}">
 
                     <img
-                    src="${user.avatar}"
-
-                    />
+                    src="${user.avatar || "/static/default-avatar.png"}"
+                    alt="Avatar">
 
                     <span>
 
@@ -2081,7 +2069,7 @@ function openForwardPanel(
         </button>
     `;
 
-    chatConversation.appendChild(
+    chatConversation?.appendChild(
         panel
     );
 
@@ -2101,6 +2089,18 @@ function openForwardPanel(
             const userId =
             btn.dataset.id;
 
+            if(
+
+                Number(userId)
+
+                ===
+
+                Number(CURRENT_USER_ID)
+            ){
+
+                return;
+            }
+
             if(selectedUsers.has(userId)){
 
                 selectedUsers.delete(
@@ -2110,8 +2110,9 @@ function openForwardPanel(
                 btn.classList.remove(
                     "selected"
                 );
+            }
 
-            }else{
+            else{
 
                 selectedUsers.add(
                     userId
@@ -2137,14 +2138,20 @@ function openForwardPanel(
         (e)=>{
 
             const value =
-            e.target.value.toLowerCase();
+
+            e.target.value
+            .toLowerCase();
 
             panel.querySelectorAll(
                 ".chat-forward-user"
             ).forEach(user=>{
 
                 const name =
-                user.dataset.name.toLowerCase();
+
+                    (
+                        user.dataset.name || ""
+                    )
+                    .toLowerCase();
 
                 user.style.display =
 
@@ -2189,6 +2196,7 @@ function openForwardPanel(
 
             for(const userId of selectedUsers){
 
+                const response =
                 await fetch(
 
                     "/chat/forward-message",
@@ -2216,6 +2224,14 @@ function openForwardPanel(
                         })
                     }
                 );
+
+                if(!response.ok){
+
+                    console.error(
+                        "Forward failed:",
+                        userId
+                    );
+                }
             }
 
             panel.remove();
@@ -2225,17 +2241,23 @@ function openForwardPanel(
             );
 
             await loadMessages();
+        }
 
-        }catch(error){
+        catch(error){
 
-            console.error(error);
+            console.error(
+                error
+            );
+
+            alert(
+                "Forward failed"
+            );
         }
     };
 }
 
 /* =========================
    FORWARD MESSAGE
->>>>>>> 54e2499 (Updated all project files)
 ========================= */
 
 document.addEventListener(
@@ -2244,12 +2266,9 @@ document.addEventListener(
 
     (e)=>{
 
-<<<<<<< HEAD
-        const deleteBtn =
+        const forwardBtn =
 
         e.target.closest(
-=======
-        const forwardBtn = e.target.closest(
             ".forward-message-btn"
         );
 
@@ -2265,7 +2284,9 @@ document.addEventListener(
         const messageId =
         forwardBtn.dataset.id;
 
-        const messageElement = document.querySelector(
+        const messageElement =
+
+        document.querySelector(
 
             `.chat-message[data-message-id="${messageId}"]`
         );
@@ -2290,6 +2311,7 @@ document.addEventListener(
     }
 );
 
+
 /* =========================
    DELETE MESSAGE
 ========================= */
@@ -2298,10 +2320,11 @@ document.addEventListener(
 
     "click",
 
-    async (e)=>{
+    (e)=>{
 
-        const deleteBtn = e.target.closest(
->>>>>>> 54e2499 (Updated all project files)
+        const deleteBtn =
+
+        e.target.closest(
             ".delete-message-btn"
         );
 
@@ -2310,38 +2333,25 @@ document.addEventListener(
             return;
         }
 
-<<<<<<< HEAD
-        const id = Number(
-            deleteBtn.dataset.id
-        );
+        e.preventDefault();
 
-        if(!id){
+        e.stopPropagation();
+
+        const messageId =
+        deleteBtn.dataset.id;
+
+        if(!messageId){
 
             return;
         }
 
-        socket.emit(
-
-            "delete_message",
-
-            {
-                message_id:id
-            }
-=======
-        const messageId =
-        deleteBtn.dataset.id;
-
         openDeletePopup(
             messageId
->>>>>>> 54e2499 (Updated all project files)
         );
     }
 );
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 54e2499 (Updated all project files)
 /* =========================
    CHAT MENU
 ========================= */
@@ -2420,8 +2430,10 @@ viewProfileBtn?.addEventListener(
             if(avatar){
 
                 avatar.src =
-                user.profile_image ||
-                "/static/default-avatar.png";
+
+                    user.profile_image ||
+
+                    "/static/default-avatar.png";
             }
 
             if(banner){
@@ -2516,12 +2528,15 @@ viewProfileBtn?.addEventListener(
         catch(error){
 
             console.error(
+
                 "PROFILE LOAD ERROR:",
+
                 error
             );
         }
     }
 );
+
 
 /* =========================
    CLOSE PROFILE
@@ -2579,6 +2594,14 @@ document.addEventListener(
         )?.classList.remove(
             "active"
         );
+
+        document.querySelector(
+            ".chat-forward-panel"
+        )?.remove();
+
+        document.getElementById(
+            "chatDeletePopup"
+        )?.remove();
     }
 );
 
@@ -2590,9 +2613,12 @@ document.addEventListener(
 function escapeHtml(text){
 
     const div =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
 
-    div.innerText = text;
+    div.innerText =
+    text || "";
 
     return div.innerHTML;
 }
@@ -2604,16 +2630,20 @@ function escapeHtml(text){
 
 function scrollMessages(){
 
-    requestAnimationFrame(()=>{
+    requestAnimationFrame(
 
-        if(!chatMessages){
+        ()=>{
 
-            return;
+            if(!chatMessages){
+
+                return;
+            }
+
+            chatMessages.scrollTop =
+
+                chatMessages.scrollHeight;
         }
-
-        chatMessages.scrollTop =
-        chatMessages.scrollHeight;
-    });
+    );
 }
 
 
@@ -2622,6 +2652,11 @@ function scrollMessages(){
 ========================= */
 
 function markVisibleMessagesRead(){
+
+    if(!socket.connected){
+
+        return;
+    }
 
     document
     .querySelectorAll(
@@ -2637,6 +2672,11 @@ function markVisibleMessagesRead(){
             return;
         }
 
+        if(message.classList.contains("read")){
+
+            return;
+        }
+
         socket.emit(
 
             "mark_read",
@@ -2644,6 +2684,10 @@ function markVisibleMessagesRead(){
             {
                 message_id:id
             }
+        );
+
+        message.classList.add(
+            "read"
         );
     });
 }
@@ -2673,6 +2717,7 @@ chatMessages?.addEventListener(
             ()=>{
 
                 readThrottle = false;
+
             },
 
             2500
@@ -2710,6 +2755,11 @@ window.clearCurrentChat = function(){
             activeReceiverId
         }
     );
+
+    if(chatMessages){
+
+        chatMessages.innerHTML = "";
+    }
 };
 
 
@@ -2770,12 +2820,23 @@ archiveChatBtn?.addEventListener(
                 "active"
             );
 
+            if(chatMessages){
+
+                chatMessages.innerHTML = "";
+            }
+
             activeReceiverId = null;
+
+            showChatToast(
+                "Chat archived"
+            );
         }
 
         catch(error){
 
-            console.error(error);
+            console.error(
+                error
+            );
         }
     }
 );
@@ -2820,6 +2881,10 @@ addToGroupBtn?.addEventListener(
         console.log(
             "Add to group clicked"
         );
+
+        showChatToast(
+            "Group feature coming soon"
+        );
     }
 );
 
@@ -2828,25 +2893,35 @@ addToGroupBtn?.addEventListener(
    SOCKET RECONNECT ERROR
 ========================= */
 
-socket.io.on(
+if(socket?.io){
 
-    "reconnect_error",
+    socket.io.on(
 
-    (err)=>{
+        "reconnect_error",
 
-        console.error(
-            "Reconnect error:",
-            err
-        );
-    }
-);
+        (err)=>{
+
+            console.error(
+
+                "Reconnect error:",
+
+                err
+            );
+        }
+    );
+}
 
 
 /* =========================
    INITIAL ICONS
 ========================= */
 
-if(window.lucide){
+if(
+
+    window.lucide
+    &&
+    typeof lucide.createIcons === "function"
+){
 
     lucide.createIcons();
 }
@@ -2857,4 +2932,3 @@ if(window.lucide){
 ========================= */
 
 }
-
