@@ -9,7 +9,6 @@ from app.extensions import (
     migrate,
     login_manager,
     bcrypt,
-    mail,
     csrf
 )
 

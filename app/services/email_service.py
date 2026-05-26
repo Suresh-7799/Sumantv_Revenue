@@ -1,45 +1,36 @@
-from flask_mail import Message
+import resend
+import os
 
-from flask import current_app
+resend.api_key = os.getenv("RESEND_API_KEY")
 
-from app.extensions import mail
-
-
-def send_async_email(
-
-    subject,
-
-    recipients,
-
-    body
-
-):
+def send_otp_email(to_email, otp):
 
     try:
 
-        print("EMAIL FUNCTION STARTED")
+        response = resend.Emails.send({
 
-        print(current_app.config["MAIL_USERNAME"])
+            "from": "onboarding@resend.dev",
 
-        msg = Message(
+            "to": to_email,
 
-            subject=subject,
+            "subject": "Your OTP Code",
 
-            recipients=recipients,
+            "html": f"""
 
-            body=body,
+            <div style='font-family:Arial;'>
 
-            sender=current_app.config[
-                "MAIL_USERNAME"
-            ]
+                <h2>Your OTP</h2>
 
-        )
+                <h1>{otp}</h1>
 
-        print("TRYING TO SEND EMAIL...")
+            </div>
 
-        mail.send(msg)
+            """
+
+        })
 
         print("EMAIL SENT SUCCESS")
+        print(response)
 
     except Exception as error:
 

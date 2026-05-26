@@ -9,7 +9,6 @@ from app.extensions import (
     migrate,
     login_manager,
     bcrypt,
-    mail,
     csrf
 )
 
@@ -38,8 +37,6 @@ def initialize_extensions(app):
     login_manager.init_app(app)
 
     bcrypt.init_app(app)
-
-    mail.init_app(app)
 
     csrf.init_app(app)
 

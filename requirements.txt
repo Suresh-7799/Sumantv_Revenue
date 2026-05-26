@@ -5,12 +5,9 @@ flask-migrate
 flask-login
 flask-bcrypt
 flask-wtf
-flask-mail
 psycopg2-binary
 python-dotenv
 email-validator
-redis
-celery
 flask-limiter
 pillow
 gevent
@@ -18,3 +15,4 @@ gevent-websocket
 eventlet==0.36.1
 flask-socketio
 dnspython
+resend

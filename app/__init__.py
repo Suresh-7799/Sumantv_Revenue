@@ -17,8 +17,6 @@ from app.extensions import (
 
     bcrypt,
 
-    mail,
-
     csrf,
 
     socketio,
@@ -137,8 +135,6 @@ def initialize_extensions(app):
     login_manager.init_app(app)
 
     bcrypt.init_app(app)
-
-    mail.init_app(app)
 
     csrf.init_app(app)
 

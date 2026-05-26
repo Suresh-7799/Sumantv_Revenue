@@ -3,7 +3,7 @@ from flask import session
 from app.services.otp_service import OTPService
 
 from app.services.email_service import (
-    send_async_email
+    send_otp_email
 )
 
 from datetime import datetime
@@ -359,7 +359,7 @@ def register():
             "employee_id": employee_id
         }
 
-        send_async_email(
+        send_otp_email(
 
             subject="Your OTP Code",
 
