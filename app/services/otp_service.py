@@ -1,13 +1,10 @@
 import random
-import time
-
 
 class OTPService:
 
     otp_store = {}
 
-    OTP_EXPIRY_SECONDS = 300
-
+    OTP_EXPIRATION = 300
 
     @staticmethod
     def generate_otp():
@@ -19,76 +16,18 @@ class OTPService:
             )
         )
 
+    @staticmethod
+    def store_otp(email, otp):
 
-    @classmethod
-    def store_otp(
+        OTPService.otp_store[email] = otp
 
-        cls,
+    @staticmethod
+    def verify_otp(email, otp):
 
-        email,
+        stored_otp = OTPService.otp_store.get(email)
 
-        otp
-
-    ):
-
-        cls.otp_store[email] = {
-
-            "otp": otp,
-
-            "created_at": time.time()
-        }
-
-
-    @classmethod
-    def verify_otp(
-
-        cls,
-
-        email,
-
-        otp
-
-    ):
-
-        data = cls.otp_store.get(
-            email
-        )
-
-        if not data:
+        if not stored_otp:
 
             return False
 
-        expired = (
-
-            time.time()
-
-            -
-
-            data["created_at"]
-
-            >
-
-            cls.OTP_EXPIRY_SECONDS
-        )
-
-        if expired:
-
-            cls.otp_store.pop(
-                email,
-                None
-            )
-
-            return False
-
-        valid = (
-            data["otp"] == otp
-        )
-
-        if valid:
-
-            cls.otp_store.pop(
-                email,
-                None
-            )
-
-        return valid
+        return stored_otp == otp
