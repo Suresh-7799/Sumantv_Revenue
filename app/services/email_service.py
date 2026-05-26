@@ -35,6 +35,8 @@ def send_async_email(
 
         )
 
+        print("TRYING TO SEND EMAIL...")
+
         mail.send(msg)
 
         print("EMAIL SENT SUCCESS")
