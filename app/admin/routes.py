@@ -76,15 +76,29 @@ def team():
 
         )
 
-    users = User.query.filter(
-        User.id != current_user.id
+    approved_users = User.query.filter(
+
+        User.id != current_user.id,
+
+        User.approval_status == "approved"
+
+    ).all()
+
+    pending_users = User.query.filter(
+
+        User.id != current_user.id,
+
+        User.approval_status == "pending"
+
     ).all()
 
     return render_template(
 
         "admin/team.html",
 
-        users=users,
+        users=approved_users,
+
+        pending_users=pending_users,
 
         search=search,
 
@@ -321,3 +335,50 @@ def update_user(user_id):
             user_id=user.id
         )
     )
+
+
+@admin_bp.route(
+    "/approve-user/<int:user_id>",
+    methods=["POST"]
+)
+@login_required
+@role_required("Admin")
+def approve_user(user_id):
+
+    user = User.query.get_or_404(
+        user_id
+    )
+
+    user.approval_status = (
+        "approved"
+    )
+
+    user.is_active = True
+
+    db.session.commit()
+
+    return {
+
+        "success": True
+    }
+
+@admin_bp.route(
+    "/reject-user/<int:user_id>",
+    methods=["POST"]
+)
+@login_required
+@role_required("Admin")
+def reject_user(user_id):
+
+    user = User.query.get_or_404(
+        user_id
+    )
+
+    db.session.delete(user)
+
+    db.session.commit()
+
+    return {
+
+        "success": True
+    }

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from app.extensions import db
 
+from zoneinfo import ZoneInfo
 
 class ChatMessage(db.Model):
 
@@ -174,7 +175,9 @@ class ChatMessage(db.Model):
 
         db.DateTime,
 
-        default=datetime.utcnow,
+        default=lambda: datetime.now(
+           ZoneInfo("Asia/Kolkata")
+        ),
 
         nullable=False,
 
@@ -185,13 +188,16 @@ class ChatMessage(db.Model):
 
         db.DateTime,
 
-        default=datetime.utcnow,
+        default=lambda: datetime.now(
+            ZoneInfo("Asia/Kolkata")
+        ),
 
-        onupdate=datetime.utcnow,
+        onupdate=lambda: datetime.now(
+            ZoneInfo("Asia/Kolkata")
+        ),
 
         nullable=False
     )
-
 
     # =========================
     # RELATIONSHIPS

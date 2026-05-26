@@ -3,6 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
+
 from flask_socketio import (
     emit,
     join_room,
@@ -62,63 +63,23 @@ def build_room(user1, user2):
     return f"chat_{ids[0]}_{ids[1]}"
 
 
+
 # =========================
 # TIMESTAMP FORMAT
 # =========================
 
+from datetime import timedelta
+
 def format_timestamp(dt):
 
-    local_dt = dt.astimezone(
-        ZoneInfo("Asia/Kolkata")
+    local_dt = dt + timedelta(
+        hours=5,
+        minutes=30
     )
-
-    now = datetime.now(
-        ZoneInfo("Asia/Kolkata")
-    )
-
-    if local_dt.date() == now.date():
-
-        return local_dt.strftime(
-            "%I:%M %p"
-        )
 
     return local_dt.strftime(
-        "%d %b %Y"
+        "%I:%M %p"
     )
-
-
-
-# =========================
-# ONLINE USERS
-# =========================
-
-online_users = set()
-
-
-# =========================
-# ROOM BUILDER
-# =========================
-
-def build_room(user1, user2):
-
-    ids = sorted([user1, user2])
-
-    return f"chat_{ids[0]}_{ids[1]}"
-
-
-# =========================
-# TIMESTAMP FORMAT
-# =========================
-
-def format_timestamp(dt):
-
-    now = datetime.utcnow()
-
-    if dt.date() == now.date():
-
-        return dt.strftime("%I:%M %p")
-
-    return dt.strftime("%d %b %Y")
 
 
 # =========================
@@ -142,53 +103,6 @@ def handle_send_message(data):
         )
 
 
-# =========================
-# JOIN CHAT
-# =========================
-
-@socketio.on("join_chat")
-def join_chat(data):
-
-    if not current_user.is_authenticated:
-        return
-
-    try:
-
-        receiver_id = int(
-            data["receiver_id"]
-        )
-
-    except Exception:
-
-        return
-
-    room = build_room(
-
-        current_user.id,
-
-        receiver_id
-    )
-
-    join_room(room)
-
-    emit(
-
-
-        "receive_message",
-
-        data,
-
-        room=f"user_{data['receiver_id']}"
-    )
-
-    emit(
-
-        "receive_message",
-
-        data,
-
-        room=f"user_{current_user.id}"
-    )
 
 
 # =========================

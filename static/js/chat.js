@@ -133,6 +133,8 @@ function initializeChat(){
 
     let activeReceiverId = null;
 
+    let joinedRoomId = null;
+
     let uploadedFile = null;
 
     let uploadInProgress = false;
@@ -198,42 +200,73 @@ socket.on(
 
     "receive_message",
 
-    (data)=>{
+    (message)=>{
 
-        const senderId = Number(
-            data.sender_id
-        );
+        if(
 
-        const receiverId = Number(
-            data.receiver_id
-        );
-
-        const currentId = Number(
-            CURRENT_USER_ID
-        );
-
-        const belongsToCurrentChat =
-
-            (
-                senderId === activeReceiverId
-                &&
-                receiverId === currentId
-            )
-
-            ||
-
-            (
-                senderId === currentId
-                &&
-                receiverId === activeReceiverId
-            );
-
-        if(!belongsToCurrentChat){
+            !activeReceiverId
+        ){
 
             return;
         }
 
-        appendMessage(data);
+        const incomingUserId = Number(
+
+            message.sender_id
+        );
+
+        const activeUserId = Number(
+
+            activeReceiverId
+        );
+
+        const currentUserId = Number(
+
+            CURRENT_USER_ID
+        );
+
+        const isCurrentChat =
+
+            incomingUserId === activeUserId ||
+
+            (
+
+                Number(message.receiver_id)
+
+                ===
+
+                activeUserId
+
+                &&
+
+                incomingUserId === currentUserId
+            );
+
+        if(!isCurrentChat){
+
+            return;
+        }
+
+        const existingMessage =
+
+        chatMessages?.querySelector(
+
+            `[data-message-id="${message.id}"]`
+        );
+
+        if(existingMessage){
+
+            return;
+        }
+
+        appendMessage(message);
+
+        if(chatMessages){
+
+            chatMessages.scrollTop =
+
+            chatMessages.scrollHeight;
+        }
     }
 );
 
@@ -468,12 +501,18 @@ window.addEventListener(
             "#chatDeletePopup"
         );
 
+        const forwardPanel = e.target.closest(
+            ".chat-forward-panel"
+        );
+
         if(
             clickedFab
             ||
             clickedDrawer
             ||
             popup
+            ||
+            forwardPanel
         ){
 
             return;
@@ -530,7 +569,31 @@ backToUsers?.addEventListener(
             "active"
         );
 
+        /* =========================
+           LEAVE CURRENT ROOM
+        ========================= */
+
+        if(joinedRoomId){
+
+            socket.emit(
+
+                "leave_chat",
+
+                {
+                    receiver_id:
+                    joinedRoomId
+                }
+            );
+        }
+
         activeReceiverId = null;
+
+        joinedRoomId = null;
+
+        if(chatMessages){
+
+            chatMessages.innerHTML = "";
+        }
     }
 );
 
@@ -586,6 +649,11 @@ async function loadMessages(){
         return;
     }
 
+    const requestReceiverId = Number(
+
+        activeReceiverId
+    );
+
     try{
 
         const response = await fetch(
@@ -606,28 +674,55 @@ async function loadMessages(){
             return;
         }
 
+        if(
+
+            Number(activeReceiverId)
+
+            !==
+
+            requestReceiverId
+        ){
+
+            return;
+        }
+
         if(chatMessages){
 
             chatMessages.innerHTML = "";
+
+            chatMessages.style.opacity = "0";
         }
+
+        lastMessageDate = null;
 
         messages.forEach(msg=>{
 
             appendMessage(msg);
         });
 
-        scrollMessages();
+        if(chatMessages){
+
+            requestAnimationFrame(()=>{
+
+                chatMessages.style.opacity = "1";
+
+                chatMessages.scrollTop =
+
+                chatMessages.scrollHeight;
+            });
+        }
     }
 
     catch(error){
 
         console.error(
+
             "LOAD FAILED:",
+
             error
         );
     }
 }
-
 
 /* =========================
    GLOBAL CLICK EVENTS
@@ -701,7 +796,31 @@ document.addEventListener(
                 });
             }
 
+            /* =========================
+               LEAVE OLD ROOM
+            ========================= */
+
+            if(
+
+                joinedRoomId
+                &&
+                joinedRoomId !== userId
+            ){
+
+                socket.emit(
+
+                    "leave_chat",
+
+                    {
+                        receiver_id:
+                        joinedRoomId
+                    }
+                );
+            }
+
             activeReceiverId = userId;
+
+            joinedRoomId = userId;
 
             if(activeChatUser){
 
@@ -723,6 +842,10 @@ document.addEventListener(
             chatConversation?.classList.add(
                 "active"
             );
+
+            /* =========================
+               JOIN NEW ROOM
+            ========================= */
 
             socket.emit(
 
@@ -1019,6 +1142,47 @@ chatFileInput?.addEventListener(
             return;
         }
 
+        const preview =
+        document.getElementById(
+            "chatUploadPreview"
+        );
+
+        if(preview){
+
+            preview.innerHTML = `
+
+                <div class="chat-upload-item">
+
+                    <div class="chat-upload-top">
+
+                        <div class="chat-upload-icon">
+
+                            📎
+
+                        </div>
+
+                        <div class="chat-upload-name">
+
+                            ${file.name}
+
+                        </div>
+
+                    </div>
+
+                    <div class="chat-upload-progress">
+
+                        <div
+                        id="chatUploadBar"
+                        class="chat-upload-progress-bar">
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+        }
+
         const allowedMimeTypes = [
 
             "image/png",
@@ -1063,7 +1227,16 @@ chatFileInput?.addEventListener(
             return;
         }
 
-        uploadChatFile(file);
+        setTimeout(
+
+            ()=>{
+
+                uploadChatFile(file);
+
+            },
+
+            120
+        );
     }
 );
 
@@ -1126,6 +1299,17 @@ async function uploadChatFile(file){
 
                         percent + "%"
                     );
+                    const bar =
+                    document.getElementById(
+                        "chatUploadBar"
+                    );
+
+                    if(bar){
+
+                        bar.style.width =
+                        percent + "%";
+                    }
+
                 }
             }
         );
@@ -1157,6 +1341,20 @@ async function uploadChatFile(file){
                 uploadedFile =
                 data.file;
 
+                const preview =
+                document.getElementById(
+                    "chatUploadPreview"
+                );
+
+                if(preview){
+
+                    setTimeout(()=>{
+
+                        preview.innerHTML = "";
+
+                    },500);
+                }
+
                 console.log(
 
                     "FILE READY:",
@@ -1187,6 +1385,17 @@ async function uploadChatFile(file){
                 "Upload failed"
             );
         };
+
+        const preview =
+        document.getElementById(
+            "chatUploadPreview"
+        );
+
+        if(preview){
+
+            preview.style.display =
+            "flex";
+        }
 
         xhr.send(formData);
     }
@@ -1441,7 +1650,7 @@ function appendMessage(data){
 
         const existing =
 
-        document.querySelector(
+        chatMessages?.querySelector(
 
             `[data-message-id="${data.id}"]`
         );
@@ -1569,14 +1778,29 @@ function appendMessage(data){
             <div
             class="chat-message-dropdown">
 
-                <button
-                type="button"
-                class="copy-message-btn"
-                data-message="${escapeHtml(data.message || "")}">
+                ${data.file_url ? `
 
-                    Copy
+                    <a
+                    href="${data.file_url}"
+                    download
+                    class="chat-download-btn">
 
-                </button>
+                        Download
+
+                    </a>
+
+                ` : `
+
+                    <button
+                    type="button"
+                    class="copy-message-btn"
+                    data-message="${escapeHtml(data.message || "")}">
+
+                        Copy
+
+                    </button>
+
+                `}
 
                 <button
                 type="button"
@@ -1612,7 +1836,7 @@ function appendMessage(data){
 
     div.innerHTML = `
 
-        <div class="chat-message-bubble">
+        <div class="chat-message-content">
 
             ${actionsMenu}
 
@@ -1623,7 +1847,9 @@ function appendMessage(data){
                 <div class="chat-message-text">
 
                     ${escapeHtml(
-                        data.message
+
+                        (data.message || "")
+                        .replace(/^Forwarded\s·\s/i, "")
                     )}
 
                 </div>
@@ -1643,19 +1869,32 @@ function appendMessage(data){
         </div>
     `;
 
+    setTimeout(
+
+        ()=>{
+
+            if(window.lucide){
+
+                lucide.createIcons();
+            }
+
+        },
+
+        0
+    );
+
     if(chatMessages){
 
         chatMessages.appendChild(
             div
         );
+
+        chatMessages.scrollTop =
+
+        chatMessages.scrollHeight;
     }
 
-    if(window.lucide){
-
-        lucide.createIcons();
-    }
-
-    scrollMessages();
+    return div;
 }
 
 
@@ -2054,6 +2293,11 @@ function openForwardPanel(
                         ${user.username}
 
                     </span>
+                    <div class="chat-forward-check">
+
+                        <i data-lucide="check"></i>
+
+                    </div>
 
                 </button>
 
@@ -2296,12 +2540,11 @@ document.addEventListener(
             return;
         }
 
-        const messageText =
+            const messageText =
 
-            messageElement.querySelector(
-                ".chat-message-text"
-            )?.innerText || "";
-
+                messageElement.querySelector(
+                    ".chat-message-text"
+                )?.textContent.trim() || "";
         openForwardPanel(
 
             messageId,
@@ -2375,186 +2618,55 @@ chatMenuBtn?.addEventListener(
    PROFILE MODAL
 ========================= */
 
-viewProfileBtn?.addEventListener(
+const chatProfileModal =
+document.getElementById(
+    "chatProfileModal"
+);
+
+const closeChatProfile =
+document.getElementById(
+    "closeChatProfile"
+);
+
+/* =========================
+   CLOSE PROFILE BUTTON
+========================= */
+
+closeChatProfile?.addEventListener(
 
     "click",
 
-    async ()=>{
+    function(event){
 
-        if(!activeReceiverId){
+        event.stopPropagation();
 
-            return;
-        }
-
-        try{
-
-            const response =
-            await fetch(
-
-                `/chat/user/${activeReceiverId}`
-            );
-
-            if(!response.ok){
-
-                return;
-            }
-
-            const user =
-            await response.json();
-
-            const modal =
-
-            document.getElementById(
-                "chatProfileModal"
-            );
-
-            if(!modal){
-
-                return;
-            }
-
-            modal.classList.add(
-                "active"
-            );
-
-            const avatar =
-            document.getElementById(
-                "chatProfileAvatar"
-            );
-
-            const banner =
-            document.getElementById(
-                "chatProfileBanner"
-            );
-
-            if(avatar){
-
-                avatar.src =
-
-                    user.profile_image ||
-
-                    "/static/default-avatar.png";
-            }
-
-            if(banner){
-
-                if(user.banner){
-
-                    banner.src =
-                    user.banner;
-
-                    banner.style.display =
-                    "block";
-                }
-
-                else{
-
-                    banner.removeAttribute(
-                        "src"
-                    );
-
-                    banner.style.display =
-                    "none";
-                }
-            }
-
-            const fullNameEl =
-            document.getElementById(
-                "chatProfileFullName"
-            );
-
-            if(fullNameEl){
-
-                fullNameEl.innerText =
-                user.full_name || "-";
-            }
-
-            const firstNameEl =
-            document.getElementById(
-                "chatProfileFirstName"
-            );
-
-            if(firstNameEl){
-
-                firstNameEl.innerText =
-                user.first_name || "-";
-            }
-
-            const lastNameEl =
-            document.getElementById(
-                "chatProfileLastName"
-            );
-
-            if(lastNameEl){
-
-                lastNameEl.innerText =
-                user.last_name || "-";
-            }
-
-            const emailEl =
-            document.getElementById(
-                "chatProfileEmail"
-            );
-
-            if(emailEl){
-
-                emailEl.innerText =
-                user.email || "-";
-            }
-
-            const employeeIdEl =
-            document.getElementById(
-                "chatProfileEmployeeId"
-            );
-
-            if(employeeIdEl){
-
-                employeeIdEl.innerText =
-                user.employee_id || "-";
-            }
-
-            const roleEl =
-            document.getElementById(
-                "chatProfileRole"
-            );
-
-            if(roleEl){
-
-                roleEl.innerText =
-                user.role || "-";
-            }
-        }
-
-        catch(error){
-
-            console.error(
-
-                "PROFILE LOAD ERROR:",
-
-                error
-            );
-        }
+        chatProfileModal?.classList.remove(
+            "active"
+        );
     }
 );
 
-
 /* =========================
-   CLOSE PROFILE
+   OUTSIDE CLICK
 ========================= */
 
-document.getElementById(
-    "closeChatProfile"
-)?.addEventListener(
+chatProfileModal?.addEventListener(
 
     "click",
 
-    ()=>{
+    function(event){
 
-        document.getElementById(
-            "chatProfileModal"
-        )?.classList.remove(
-            "active"
-        );
+        /* ONLY overlay click */
+
+        if(
+            event.target ===
+            chatProfileModal
+        ){
+
+            chatProfileModal.classList.remove(
+                "active"
+            );
+        }
     }
 );
 
@@ -2623,28 +2735,6 @@ function escapeHtml(text){
     return div.innerHTML;
 }
 
-
-/* =========================
-   AUTO SCROLL
-========================= */
-
-function scrollMessages(){
-
-    requestAnimationFrame(
-
-        ()=>{
-
-            if(!chatMessages){
-
-                return;
-            }
-
-            chatMessages.scrollTop =
-
-                chatMessages.scrollHeight;
-        }
-    );
-}
 
 
 /* =========================

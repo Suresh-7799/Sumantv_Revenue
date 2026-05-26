@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import render_template
 
 from datetime import datetime, date
 
@@ -109,6 +110,13 @@ def create_app():
 
     register_blueprints(app)
 
+    @app.errorhandler(429)
+    def ratelimit_error(error):
+
+        return render_template(
+            "errors/429.html"
+        ), 429
+
     from app.realtime import socket
     from app.realtime import group_socket
 
@@ -181,6 +189,9 @@ def configure_login_manager():
         return User.query.get(
             int(user_id)
         )
+
+
+
 
 
 def register_blueprints(app):

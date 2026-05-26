@@ -14,6 +14,26 @@ Team
             Team Management
         </h1>
 
+        <button
+        class="team-request-btn"
+        onclick="openRequestsModal()">
+
+            Requests
+
+            <span id="requestCount">
+                {{ pending_users|length }}
+            </span>
+
+        </button>
+
+        <button
+        class="team-refresh-btn"
+        onclick="location.reload()">
+
+            ↻
+
+        </button>
+
         <div class="team-search-form">
 
             <input
@@ -133,42 +153,137 @@ Team
 
     </div>
 
+<div
+class="requests-modal"
+id="requestsModal">
+
+    <div class="requests-modal-card">
+
+        <div class="requests-modal-header">
+
+            <h2 class="requests-modal-title">
+
+                Pending Requests
+
+            </h2>
+
+            <button
+            type="button"
+            class="requests-close"
+            onclick="closeRequestsModal()">
+
+                ✕
+
+            </button>
+
+        </div>
+
+        <input
+        type="hidden"
+        id="csrfToken"
+        value="{{ csrf_token() }}">
+
+        <div class="requests-modal-body">
+
+            <div
+            id="requestToast"
+            class="request-toast">
+
+            </div>
+
+            {% if pending_users|length == 0 %}
+
+            <div class="no-requests">
+
+                No New Requests
+
+            </div>
+
+
+            {% endif %}
+
+            {% for user in pending_users %}
+
+            <div 
+            class="request-user"
+            data-user-id="{{ user.id }}">
+
+                <div class="request-user-left">
+
+                    <div class="request-avatar">
+
+                        {% if user.profile_image %}
+
+                        <img
+                        src="{{ user.profile_image }}"
+                        alt="Profile">
+
+                        {% else %}
+
+                        {{ display_name(user.username)[0] | upper }}
+
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="request-user-info">
+
+                        <h4>
+
+                            {{ user.display_name or user.username }}
+
+                        </h4>
+
+                        <p>
+
+                            {{ user.email }}
+
+                        </p>
+
+                        <span class="request-id">
+
+                            ID:
+                            {{ user.employee_id }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="request-actions">
+
+                    <button
+                    type="button"
+                    class="request-action-btn approve-action"
+                    onclick="approveUser({{ user.id }})">
+
+                        ✔
+
+                    </button>
+
+                    <button
+                    type="button"
+                    class="request-action-btn reject-action"
+                    onclick="rejectUser({{ user.id }})">
+
+                        ✕
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
 </section>
-
-<script>
-
-const teamSearch =
-document.getElementById(
-    "teamSearch"
-);
-
-teamSearch.addEventListener(
-    "keyup",
-    function(){
-
-        const value =
-        this.value.toLowerCase();
-
-        document
-        .querySelectorAll(
-            ".team-table tbody tr"
-        )
-        .forEach(row=>{
-
-            row.style.display =
-            row.innerText
-            .toLowerCase()
-            .includes(value)
-
-            ? ""
-
-            : "none";
-
-        });
-
-    }
-);
-
-</script>
 
 {% endblock %}

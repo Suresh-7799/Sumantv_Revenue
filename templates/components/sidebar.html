@@ -5,7 +5,7 @@ class="app-sidebar">
     <div class="sidebar-inner">
 
         <a
-        href="{{ url_for('dashboard.home') }}"
+        href="{{ url_for('dashboard.overview') }}"
         class="sidebar-logo">
 
             <div class="sidebar-logo-icon">
@@ -33,28 +33,59 @@ class="app-sidebar">
         <nav class="sidebar-nav">
 
             <a
-            href="{{ url_for('dashboard.home') }}"
+            href="{{ url_for('dashboard.overview') }}"
             class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">
 
-                <span class="sidebar-icon">◈</span>
+                <span class="sidebar-icon">
+                    ◈
+                </span>
 
-                <span>Overview</span>
+                <span>
+                    Overview
+                </span>
 
             </a>
 
-            <a href="#" class="sidebar-link">
-                <span class="sidebar-icon">◎</span>
-                <span>Revenue</span>
+            <a
+            href="{{ url_for('dashboard.revenue') }}"
+            class="sidebar-link {% if active_page == 'revenue' %}active{% endif %}">
+
+                <span class="sidebar-icon">
+                    ◎
+                </span>
+
+                <span>
+                    Revenue
+                </span>
+
             </a>
 
-            <a href="#" class="sidebar-link">
-                <span class="sidebar-icon">◉</span>
-                <span>Analytics</span>
+            <a
+            href="{{ url_for('dashboard.analytics') }}"
+            class="sidebar-link {% if active_page == 'analytics' %}active{% endif %}">
+
+                <span class="sidebar-icon">
+                    ◉
+                </span>
+
+                <span>
+                    Analytics
+                </span>
+
             </a>
 
-            <a href="#" class="sidebar-link">
-                <span class="sidebar-icon">◆</span>
-                <span>Workspace</span>
+            <a
+            href="{{ url_for('dashboard.workspace') }}"
+            class="sidebar-link {% if active_page == 'workspace' %}active{% endif %}">
+
+                <span class="sidebar-icon">
+                    ◆
+                </span>
+
+                <span>
+                    Workspace
+                </span>
+
             </a>
 
             {% if current_user.is_authenticated
@@ -77,7 +108,7 @@ class="app-sidebar">
 
             {% endif %}
 
-        </nav>        
+        </nav>
 
     </div>
 

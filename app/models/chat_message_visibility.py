@@ -17,7 +17,24 @@ class ChatMessageVisibility(db.Model):
     )
 
     hidden_for_user_id = db.Column(
+
         db.Integer,
-        db.ForeignKey("users.id"),
-        nullable=False
+
+        db.ForeignKey(
+
+            "users.id",
+
+            ondelete="CASCADE"
+
+        )
+
+    )
+
+
+    hidden_for_user = db.relationship(
+
+        "User",
+
+        passive_deletes=True
+
     )

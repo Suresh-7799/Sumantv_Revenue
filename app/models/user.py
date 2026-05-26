@@ -116,7 +116,19 @@ class User(UserMixin, db.Model):
     is_active = db.Column(
         db.Boolean,
         nullable=False,
-        default=True
+        default=False
+    )
+
+    is_email_verified = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    approval_status = db.Column(
+        db.String(30),
+        nullable=False,
+        default="pending"
     )
 
     created_at = db.Column(

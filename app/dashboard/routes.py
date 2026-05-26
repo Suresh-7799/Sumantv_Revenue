@@ -2,6 +2,13 @@ import os
 import time
 from datetime import datetime
 
+from app.dashboard import dashboard_bp
+from app.admin import admin_bp
+
+from app.realtime.socket import (
+    format_timestamp
+)
+
 from zoneinfo import ZoneInfo
 from app.models.chat_message_visibility import ChatMessageVisibility
 
@@ -99,13 +106,16 @@ def index():
     if current_user.is_authenticated:
 
         return redirect(
-            url_for("dashboard.home")
+            url_for(
+                "dashboard.overview"
+            )
         )
 
     return redirect(
-        url_for("auth.login")
+        url_for(
+            "auth.login"
+        )
     )
-
 
 # =========================
 # DASHBOARD
@@ -113,25 +123,13 @@ def index():
 
 @dashboard_bp.route("/dashboard")
 @login_required
-def home():
+def dashboard_redirect():
 
-    users = User.query.filter(
-
-        User.role_id == current_user.role_id,
-
-        User.id != current_user.id
-
-    ).all()
-
-    return render_template(
-
-        "dashboard/dashboard.html",
-
-        users=users,
-
-        active_page="overview"
+    return redirect(
+        url_for(
+            "dashboard.overview"
+        )
     )
-
 
 # =========================
 # PROFILE
@@ -525,18 +523,9 @@ def get_chat_messages(user_id):
             msg.file_category,
 
             "created_at":
-            msg.created_at.astimezone(
-                ZoneInfo("Asia/Kolkata")
-            ).strftime("%I:%M %p")
-            if msg.created_at.astimezone(
-                ZoneInfo("Asia/Kolkata")
-            ).date() == datetime.now(
-                ZoneInfo("Asia/Kolkata")
-            ).date()
-            else
-            msg.created_at.astimezone(
-                ZoneInfo("Asia/Kolkata")
-            ).strftime("%d %b %Y"),
+            format_timestamp(
+                msg.created_at
+            ),
 
             "deleted":
             msg.deleted,
@@ -1593,4 +1582,91 @@ def forward_message():
 
         "success":True
     })
+
+
+
+@dashboard_bp.route("/overview")
+@login_required
+def overview():
+
+    users = User.query.filter(
+
+        User.role_id == current_user.role_id,
+
+        User.id != current_user.id
+
+    ).all()
+
+    return render_template(
+
+        "dashboard/overview.html",
+
+        active_page="overview",
+
+        users=users
+    )
+
+
+@dashboard_bp.route("/revenue")
+@login_required
+def revenue():
+
+    users = User.query.filter(
+
+        User.role_id == current_user.role_id,
+
+        User.id != current_user.id
+
+    ).all()
+
+
+    return render_template(
+
+        "dashboard/revenue.html",
+
+        active_page="revenue",
+        users=users
+    )
+
+
+@dashboard_bp.route("/analytics")
+@login_required
+def analytics():
+
+    users = User.query.filter(
+
+        User.role_id == current_user.role_id,
+
+        User.id != current_user.id
+
+    ).all()    
+
+    return render_template(
+
+        "dashboard/analytics.html",
+
+        active_page="analytics",
+        users=users
+    )
+
+
+@dashboard_bp.route("/workspace")
+@login_required
+def workspace():
+
+    users = User.query.filter(
+
+        User.role_id == current_user.role_id,
+
+        User.id != current_user.id
+
+    ).all()
+
+    return render_template(
+
+        "dashboard/workspace.html",
+
+        active_page="workspace",
+        users=users
+    )
 

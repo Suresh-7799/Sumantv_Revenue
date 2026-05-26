@@ -1,5 +1,11 @@
 from flask import session
 
+from app.services.otp_service import OTPService
+
+from app.services.email_service import (
+    send_async_email
+)
+
 from datetime import datetime
 
 from flask import (
@@ -71,7 +77,7 @@ def login():
 
         return redirect(
             url_for(
-                "dashboard.home"
+                "dashboard.overview"
             )
         )
 
@@ -158,7 +164,53 @@ def login():
                 url_for("auth.login")
             )
 
-        if not user.is_active:
+        # =========================
+        # EMAIL VERIFICATION
+        # =========================
+
+        if not user.is_email_verified:
+
+            flash(
+                "Please verify your email",
+                "warning"
+            )
+
+            return redirect(
+                url_for("auth.login")
+            )
+
+        # =========================
+        # ADMIN APPROVAL CHECK
+        # =========================
+
+        if (
+
+            user.role
+            and user.role.name != "Admin"
+            and user.approval_status.lower() != "approved"
+
+        ):
+
+            flash(
+                "Waiting for admin approval",
+                "warning"
+            )
+
+            return redirect(
+                url_for("auth.login")
+            )
+
+        # =========================
+        # ACCOUNT STATUS CHECK
+        # =========================
+
+        if (
+
+            user.role
+            and user.role.name != "Admin"
+            and not user.is_active
+
+        ):
 
             flash(
                 "Account disabled",
@@ -168,6 +220,10 @@ def login():
             return redirect(
                 url_for("auth.login")
             )
+
+        # =========================
+        # LOGIN USER
+        # =========================
 
         login_user(
 
@@ -192,10 +248,9 @@ def login():
 
         )
 
-
         return redirect(
             url_for(
-                "dashboard.home"
+                "dashboard.overview"
             )
         )
 
@@ -216,132 +271,46 @@ def login():
 @audit_action("register_attempt")
 def register():
 
-    if current_user.is_authenticated:
-
-        return redirect(
-            url_for(
-                "dashboard.dashboard"
-            )
-        )
-
     if request.method == "POST":
 
         first_name = (
-            request.form.get("first_name", "")
-            .strip()
+            request.form.get(
+                "first_name",
+                ""
+            ).strip()
         )
-
-        last_name = (
-            request.form.get("last_name", "")
-            .strip()
-        )
-
-        display_name = (
-            request.form.get("display_name", "")
-            .strip()
-        )
-
-        username = display_name
 
         email = (
-            request.form.get("email", "")
-            .strip()
+            request.form.get(
+                "email",
+                ""
+            ).strip()
             .lower()
         )
 
         password = (
-            request.form.get("password", "")
-            .strip()
+            request.form.get(
+                "password",
+                ""
+            ).strip()
         )
 
-        phone = request.form.get("phone", "").strip()
+        employee_id = (
+            request.form.get(
+                "employee_id",
+                ""
+            ).strip()
+        )
 
-        date_of_birth_raw = request.form.get(
-            "date_of_birth",
-            ""
-        ).strip()
-
-        date_of_birth = None
-
-        if date_of_birth_raw:
-
-            try:
-
-                formats = [
-
-                    "%Y-%m-%d",
-
-                    "%d/%m/%Y"
-                ]
-
-                for fmt in formats:
-
-                    try:
-
-                        date_of_birth = datetime.strptime(
-
-                            date_of_birth_raw,
-
-                            fmt
-
-                        ).date()
-
-                        break
-
-                    except ValueError:
-
-                        continue
-
-            except ValueError:
-
-                date_of_birth = None
-
-        gender = request.form.get(
-            "gender",
-            ""
-        ).strip()
-
-        marital_status = request.form.get(
-            "marital_status",
-            ""
-        ).strip()
-
-        nationality = request.form.get(
-            "nationality",
-            ""
-        ).strip()
-
-        blood_group = request.form.get(
-            "blood_group",
-            ""
-        ).strip()
-
-        employee_id = request.form.get(
-            "employee_id",
-            ""
-        ).strip()
-
-        bio = request.form.get(
-            "bio",
-            ""
-        ).strip()
-
-        try:
-
-            RequestValidator.validate_registration({
-
-                "username": username,
-
-                "email": email,
-
-                "password": password
-
-            })
-
-        except ValueError as error:
+        if not all([
+            first_name,
+            email,
+            password,
+            employee_id
+        ]):
 
             flash(
-                str(error),
+                "All fields are required",
                 "warning"
             )
 
@@ -355,7 +324,7 @@ def register():
 
                 User.email == email,
 
-                User.username == username
+                User.employee_id == employee_id
 
             )
 
@@ -372,37 +341,99 @@ def register():
                 url_for("auth.register")
             )
 
-        required_fields = {
-            "First Name": first_name,
-            "Last Name": last_name,
-            "Display Name": display_name,
-            "Email": email,
-            "Password": password,
-            "Employee ID": employee_id,
-            "Gender": gender,
-            "Marital Status": marital_status,
-            "Date Of Birth": date_of_birth_raw,
+        otp = OTPService.generate_otp()
+
+        OTPService.store_otp(
+            email,
+            otp
+        )
+
+        session["pending_register"] = {
+
+            "first_name": first_name,
+
+            "email": email,
+
+            "password": password,
+
+            "employee_id": employee_id
         }
 
-        for field_name, value in required_fields.items():
+        send_async_email(
 
-            if not value or not str(value).strip():
+            subject="Your OTP Code",
 
-                flash(
-                    f"{field_name} is required",
-                    "warning"
-                )
+            recipients=[email],
 
-                return redirect(
-                    url_for("auth.register")
-                )
+            body=f"Your OTP is: {otp}"
+        )
 
+        flash(
+            "OTP sent to your email",
+            "info"
+        )
+
+        return redirect(
+            url_for(
+                "auth.verify_otp"
+            )
+        )
+
+    return render_template(
+
+        "auth/register.html",
+
+        page_title="Register"
+    )
+
+@auth_bp.route(
+    "/verify-otp",
+    methods=["GET", "POST"]
+)
+def verify_otp():
+
+    pending = session.get(
+        "pending_register"
+    )
+
+    if not pending:
+
+        return redirect(
+            url_for("auth.register")
+        )
+
+    if request.method == "POST":
+
+        otp = request.form.get(
+            "otp",
+            ""
+        ).strip()
+
+        email = pending["email"]
+
+        valid = OTPService.verify_otp(
+            email,
+            otp
+        )
+
+        if not valid:
+
+            flash(
+                "Invalid OTP",
+                "danger"
+            )
+
+            return redirect(
+                url_for("auth.verify_otp")
+            )
 
         password_hash = (
+
             bcrypt.generate_password_hash(
-                password
-            )
-            .decode("utf-8")
+
+                pending["password"]
+
+            ).decode("utf-8")
         )
 
         from app.models.role import Role
@@ -410,63 +441,48 @@ def register():
         member_role = Role.query.filter_by(
             name="Member"
         ).first()
-            
 
         user = User(
 
-            username=username,
+            username=
+            pending["email"].split("@")[0],
 
-            email=email,
+            first_name=
+            pending["first_name"],
 
-            password_hash=password_hash,
+            display_name=
+            pending["first_name"],
 
-            first_name=first_name,
+            email=
+            pending["email"],
 
-            last_name=last_name,
-            
+            employee_id=
+            pending["employee_id"],
+
+            password_hash=
+            password_hash,
+
             role=member_role,
 
-            display_name=display_name,
+            is_email_verified=True,
 
-            phone=phone,
+            is_active=False,
 
-            date_of_birth=date_of_birth,
-
-            gender=gender,
-
-            marital_status=marital_status,
-
-            nationality=nationality,
-
-            blood_group=blood_group,
-
-            employee_id=employee_id,
-
-            bio=bio,
-
-            is_active=True
-
+            approval_status="pending"
         )
 
         db.session.add(user)
 
         db.session.commit()
 
-        log_action(
-
-            user=user.email,
-
-            action="user_registered",
-
-            metadata={
-                "ip":
-                request.remote_addr
-            }
-
+        session.pop(
+            "pending_register",
+            None
         )
 
         flash(
-            "Registration successful",
+
+            "Registration successful. Wait for admin approval.",
 
             "success"
         )
@@ -476,11 +492,7 @@ def register():
         )
 
     return render_template(
-
-        "auth/register.html",
-
-        page_title="Register"
-
+        "auth/verify_otp.html"
     )
 
 

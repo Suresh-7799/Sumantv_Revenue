@@ -253,7 +253,11 @@ aria-labelledby="chatDrawerTitle">
         <!-- =========================
              INPUT AREA
         ========================== -->
+        <div
+        id="chatUploadPreview"
+        class="chat-upload-preview">
 
+        </div>
         <div class="chat-input-wrapper">
 
             <!-- FILE INPUT -->
@@ -315,5 +319,66 @@ aria-labelledby="chatDrawerTitle">
         </div>
 
     </div>
+
+<div
+id="chatClearOverlay"
+class="chat-clear-overlay">
+
+    <div class="chat-clear-popup">
+
+        <h3>
+
+            Clearing Chat
+
+        </h3>
+
+        <div
+        class="chat-clear-stats">
+
+            <div>
+
+                Total:
+                <span id="clearTotal">
+
+                    0
+
+                </span>
+
+            </div>
+
+            <div>
+
+                Cleared:
+                <span id="clearDone">
+
+                    0
+
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="chat-clear-progress">
+
+            <div
+            id="clearBar"
+            class="chat-clear-progress-bar">
+
+            </div>
+
+        </div>
+
+        <div
+        id="clearPercent"
+        class="chat-clear-percent">
+
+            0%
+
+        </div>
+
+    </div>
+
+</div>
 
 </div>
