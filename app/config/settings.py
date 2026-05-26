@@ -72,6 +72,10 @@ class Config:
         "MAIL_DEFAULT_SENDER"
     )
 
+    MAIL_SUPPRESS_SEND = False
+
+    MAIL_TIMEOUT = 30
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

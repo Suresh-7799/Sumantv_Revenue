@@ -1,23 +1,29 @@
-from flask_mail import Message
+import smtplib
+import socket
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 from flask import current_app
-from app.extensions import mail
 
 
 def send_otp_email(to_email, otp):
 
     try:
 
-        print("EMAIL FUNCTION STARTED")
+        smtp_server = current_app.config["MAIL_SERVER"]
+        smtp_port = current_app.config["MAIL_PORT"]
 
-        msg = Message(
+        sender_email = current_app.config["MAIL_USERNAME"]
+        sender_password = current_app.config["MAIL_PASSWORD"]
 
-            subject="Your OTP Code",
+        message = MIMEMultipart()
 
-            sender=current_app.config["MAIL_USERNAME"],
+        message["From"] = sender_email
+        message["To"] = to_email
+        message["Subject"] = "Your OTP Code"
 
-            recipients=[to_email],
-
-            body=f"""
+        body = f"""
 
 Your OTP Code is:
 
@@ -25,13 +31,35 @@ Your OTP Code is:
 
 Do not share this OTP with anyone.
 
-            """.strip()
+        """
 
+        message.attach(
+            MIMEText(body, "plain")
         )
 
-        print("TRYING TO SEND EMAIL...")
+        socket.setdefaulttimeout(30)
 
-        mail.send(msg)
+        server = smtplib.SMTP(
+            smtp_server,
+            smtp_port
+        )
+
+        server.ehlo()
+
+        server.starttls()
+
+        server.login(
+            sender_email,
+            sender_password
+        )
+
+        server.sendmail(
+            sender_email,
+            to_email,
+            message.as_string()
+        )
+
+        server.quit()
 
         print("EMAIL SENT SUCCESS")
 
