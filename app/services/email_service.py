@@ -1,7 +1,6 @@
 from flask_mail import Message
-
+from flask import current_app
 from app.extensions import mail
-
 
 def send_otp_email(to_email, otp):
 
@@ -10,13 +9,9 @@ def send_otp_email(to_email, otp):
         print("EMAIL FUNCTION STARTED")
 
         msg = Message(
-
             subject="Your OTP Code",
-
-            sender="sumantv.otp.service@gmail.com",
-
+            sender=current_app.config["MAIL_USERNAME"],
             recipients=[to_email],
-
             body=f"""
 
 Your OTP Code is:
@@ -26,7 +21,6 @@ Your OTP Code is:
 Do not share this OTP with anyone.
 
             """.strip()
-
         )
 
         print("TRYING TO SEND EMAIL...")
