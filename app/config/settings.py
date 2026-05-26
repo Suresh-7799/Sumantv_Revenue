@@ -68,6 +68,10 @@ class Config:
         "MAIL_PASSWORD"
     )
 
+    MAIL_DEFAULT_SENDER = os.getenv(
+        "MAIL_DEFAULT_SENDER"
+    )
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

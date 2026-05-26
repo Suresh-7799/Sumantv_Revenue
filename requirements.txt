@@ -15,4 +15,4 @@ gevent-websocket
 eventlet==0.36.1
 flask-socketio
 dnspython
-resend
+flask-mail

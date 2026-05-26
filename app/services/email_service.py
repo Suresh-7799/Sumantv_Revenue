@@ -1,36 +1,39 @@
-import resend
-import os
+from flask_mail import Message
 
-resend.api_key = os.getenv("RESEND_API_KEY")
+from app.extensions import mail
+
 
 def send_otp_email(to_email, otp):
 
     try:
 
-        response = resend.Emails.send({
+        print("EMAIL FUNCTION STARTED")
 
-            "from": "onboarding@resend.dev",
+        msg = Message(
 
-            "to": to_email,
+            subject="Your OTP Code",
 
-            "subject": "Your OTP Code",
+            sender="sumantv.otp.service@gmail.com",
 
-            "html": f"""
+            recipients=[to_email],
 
-            <div style='font-family:Arial;'>
+            body=f"""
 
-                <h2>Your OTP</h2>
+Your OTP Code is:
 
-                <h1>{otp}</h1>
+{otp}
 
-            </div>
+Do not share this OTP with anyone.
 
-            """
+            """.strip()
 
-        })
+        )
+
+        print("TRYING TO SEND EMAIL...")
+
+        mail.send(msg)
 
         print("EMAIL SENT SUCCESS")
-        print(response)
 
     except Exception as error:
 

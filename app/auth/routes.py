@@ -360,12 +360,8 @@ def register():
         }
 
         send_otp_email(
-
-            subject="Your OTP Code",
-
-            recipients=[email],
-
-            body=f"Your OTP is: {otp}"
+            email,
+            otp
         )
 
         flash(
