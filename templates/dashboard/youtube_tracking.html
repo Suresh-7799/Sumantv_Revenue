@@ -1,0 +1,42 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block page_title %}
+YouTube Tracking
+{% endblock %}
+
+{% block dashboard_content %}
+
+<h1>
+    YouTube Tracking
+</h1>
+
+<form method="POST">
+
+    <input
+        type="text"
+        name="youtube_link"
+        placeholder="Paste YouTube Link"
+        required
+    >
+
+    <button type="submit">
+        Save
+    </button>
+
+</form>
+
+<hr>
+
+{% for item in links %}
+
+<div>
+
+    <p>
+        {{ item.link }}
+    </p>
+
+</div>
+
+{% endfor %}
+
+{% endblock %}

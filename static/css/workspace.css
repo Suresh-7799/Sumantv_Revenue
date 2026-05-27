@@ -1,0 +1,156 @@
+.workspace-header{
+
+    margin-bottom: 30px;
+}
+
+.workspace-title{
+
+    font-size: 32px;
+
+    font-weight: 700;
+
+    color: white;
+
+    margin-bottom: 8px;
+}
+
+.workspace-subtitle{
+
+    color: rgba(255,255,255,0.6);
+
+    font-size: 15px;
+}
+
+.workspace-grid{
+
+    display: grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(280px,1fr));
+
+    gap: 24px;
+}
+
+.workspace-card{
+
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 28px;
+
+    border-radius: 24px;
+
+    text-decoration: none;
+
+    background:
+    rgba(255,255,255,0.05);
+
+    border:
+    1px solid rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(14px);
+
+    transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
+
+    min-height: 220px;
+}
+
+.workspace-card:hover{
+
+    transform:
+    translateY(-6px);
+
+    border-color:
+    rgba(255,255,255,0.18);
+
+    background:
+    rgba(255,255,255,0.08);
+}
+
+.workspace-card::before{
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+    radial-gradient(
+        circle at top right,
+        rgba(255,255,255,0.08),
+        transparent 50%
+    );
+
+    pointer-events: none;
+}
+
+.workspace-icon{
+
+    width: 60px;
+
+    height: 60px;
+
+    border-radius: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom: 24px;
+
+    font-size: 26px;
+
+    background:
+    rgba(255,255,255,0.08);
+
+    color: white;
+}
+
+.workspace-card h2{
+
+    color: white;
+
+    font-size: 22px;
+
+    margin-bottom: 12px;
+}
+
+.workspace-card p{
+
+    color:
+    rgba(255,255,255,0.65);
+
+    line-height: 1.7;
+
+    font-size: 15px;
+}
+
+.workspace-badge{
+
+    position: absolute;
+
+    top: 18px;
+
+    right: 18px;
+
+    padding:
+    6px 12px;
+
+    border-radius: 999px;
+
+    background:
+    rgba(255,255,255,0.08);
+
+    color: rgba(255,255,255,0.75);
+
+    font-size: 12px;
+
+    font-weight: 600;
+}

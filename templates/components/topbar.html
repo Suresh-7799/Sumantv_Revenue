@@ -31,7 +31,13 @@ center/cover no-repeat;
 
             <h3 class="topbar-title">
 
-                {{ display_name(current_user.username) }} 👋
+                {{
+                    current_user.display_name
+                    or
+                    current_user.first_name
+                    or
+                    "User"
+                }} 👋
 
             </h3>
 
@@ -107,7 +113,15 @@ center/cover no-repeat;
 
                     {% elif current_user.is_authenticated %}
 
-                        {{ current_user.display_name[0] | upper }}
+                        {{
+                            (
+                                current_user.display_name
+                                or
+                                current_user.first_name
+                                or
+                                "User"
+                            )[0] | upper
+                        }}
 
                     {% else %}
 

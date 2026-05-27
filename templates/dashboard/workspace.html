@@ -1,11 +1,139 @@
 {% extends "layouts/dashboard_layout.html" %}
 
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/workspace.css') }}"
+>
+{% endblock %}
+
 {% block page_title %}
 Workspace
 {% endblock %}
 
 {% block dashboard_content %}
 
-<h1>Workspace Page</h1>
+<div class="workspace-header">
 
+    <h1 class="workspace-title">
+        Workspace
+    </h1>
+
+    <p class="workspace-subtitle">
+        Manage tracking systems,
+        automations and analytics.
+    </p>
+
+</div>
+
+<div class="workspace-grid">
+
+    <a
+        href="/workspace/youtube-tracking"
+        class="workspace-card"
+    >
+
+        <span class="workspace-badge">
+            YouTube
+        </span>
+
+        <div class="workspace-icon">
+            ▶
+        </div>
+
+        <h2>
+            YouTube Tracking
+        </h2>
+
+        <p>
+            Manage YouTube tracking
+            links, campaigns and
+            performance systems.
+        </p>
+
+    </a>
+
+    <a
+        href="/workspace/facebook-tracking"
+        class="workspace-card"
+    >
+
+        <span class="workspace-badge">
+            Facebook
+        </span>
+
+        <div class="workspace-icon">
+            ⓕ
+        </div>
+
+        <h2>
+            Facebook Tracking
+        </h2>
+
+        <p>
+            Organize Facebook pages,
+            traffic links and
+            tracking workflows.
+        </p>
+
+    </a>
+
+    <a
+        href="/workspace/yt-automation"
+        class="workspace-card"
+    >
+
+        <span class="workspace-badge">
+            Automation
+        </span>
+
+        <div class="workspace-icon">
+            ⚡
+        </div>
+
+        <h2>
+            YT Automation
+        </h2>
+
+        <p>
+            Monitor YouTube
+            automation detections
+            and workflow status.
+        </p>
+
+    </a>
+
+    <a
+        href="/workspace/fb-automation"
+        class="workspace-card"
+    >
+
+        <span class="workspace-badge">
+            Automation
+        </span>
+
+        <div class="workspace-icon">
+            ⚡
+        </div>
+
+        <h2>
+            FB Automation
+        </h2>
+
+        <p>
+            Control Facebook
+            automation systems
+            and monitoring tools.
+        </p>
+
+    </a>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script
+    src="{{ url_for('static', filename='js/workspace.js') }}"
+></script>
 {% endblock %}

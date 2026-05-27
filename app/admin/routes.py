@@ -248,21 +248,7 @@ def update_user(user_id):
         "role_id"
     )
 
-    # prevent self downgrade
-
-    if user.id == current_user.id:
-
-        flash(
-            "You cannot change your own admin role",
-            "warning"
-        )
-
-        return redirect(
-            url_for(
-                "admin.user_details",
-                user_id=user.id
-            )
-        )
+    is_self_update = user.id == current_user.id
 
     role = None
 
@@ -314,7 +300,16 @@ def update_user(user_id):
 
     if role:
 
-        user.role = role
+        if is_self_update:
+
+            flash(
+                "You cannot change your own admin role",
+                "warning"
+            )
+
+        else:
+
+            user.role = role
 
     user.is_active = (
         True

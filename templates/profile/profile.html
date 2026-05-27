@@ -427,8 +427,13 @@ class="crop-status">
 
                     <input
                     type="email"
-                    value="{{ current_user.email }}"
+                    name="email"
+                    value="{{ current_user.email or '' }}"
+
+                    {% if not current_user.role or current_user.role.name != "Admin" %}
                     readonly
+                    {% endif %}
+
                     class="readonly-input">
 
                 </div>
@@ -441,8 +446,11 @@ class="crop-status">
 
                     <input
                     type="text"
+                    name="phone"
                     value="{{ current_user.phone or '' }}"
+                    {% if not current_user.role or current_user.role.name != "Admin" %}
                     readonly
+                    {% endif %}
                     class="readonly-input">
 
                 </div>
@@ -570,8 +578,11 @@ class="crop-status">
 
                     <input
                     type="text"
+                    name="employee_id"
                     value="{{ current_user.employee_id or '' }}"
+                    {% if not current_user.role or current_user.role.name != "Admin" %}
                     readonly
+                    {% endif %}
                     class="readonly-input">
 
                 </div>

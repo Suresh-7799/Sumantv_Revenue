@@ -2,6 +2,18 @@ import os
 import time
 from datetime import datetime
 
+from app.models.youtube_channel import YoutubeChannel
+
+from app.extensions import db
+
+from app.models.youtube_tracking import (
+    YoutubeTracking
+)
+
+from app.services.youtube_ocr_service import (
+    scan_youtube_video
+)
+
 from app.dashboard import dashboard_bp
 from app.admin import admin_bp
 
@@ -421,6 +433,49 @@ def update_profile():
             value
         )
 
+    # =========================
+    # ADMIN ONLY FIELDS
+    # =========================
+
+    if (
+
+        current_user.role
+
+        and
+
+        current_user.role.name == "Admin"
+    ):
+
+        email = request.form.get(
+            "email"
+        )
+
+        employee_id = request.form.get(
+            "employee_id"
+        )
+
+        phone = request.form.get(
+            "phone"
+        )
+
+        if email and email.strip():
+
+            current_user.email = (
+                email.strip()
+            )
+
+        if employee_id and employee_id.strip():
+
+            current_user.employee_id = (
+                employee_id.strip()
+            )
+
+        if phone and phone.strip():
+
+            current_user.phone = (
+                phone.strip()
+            )
+
     db.session.commit()
 
     flash(
@@ -433,7 +488,6 @@ def update_profile():
     return redirect(
         url_for("dashboard.profile")
     )
-
 
 # =========================
 # CHAT MESSAGES
@@ -1668,5 +1722,169 @@ def workspace():
 
         active_page="workspace",
         users=users
+    )
+
+
+# =========================
+# WORKSPACE PAGES
+# =========================
+
+@dashboard_bp.route(
+    "/workspace/youtube-tracking"
+)
+@login_required
+def youtube_tracking():
+
+    return render_template(
+        "dashboard/youtube_tracking.html"
+    )
+
+
+@dashboard_bp.route(
+    "/workspace/facebook-tracking"
+)
+@login_required
+def facebook_tracking():
+
+    return render_template(
+        "dashboard/facebook_tracking.html"
+    )
+
+
+@dashboard_bp.route(
+    "/workspace/yt-automation",
+    methods=["GET", "POST"]
+)
+@login_required
+def yt_automation():
+
+    if request.method == "POST":
+
+        link = request.form.get(
+            "youtube_link"
+        )
+
+        if link:
+
+            scan_data = scan_youtube_video(
+                link
+            )
+            
+            channel_name = scan_data.get(
+                "channel_name"
+            )
+
+            results = scan_data.get(
+                "results",
+                []
+            )
+
+            matched_strip = "No strip found"
+
+            if results:
+
+                matched_strip = " | ".join(
+
+                    [
+                        item["text"]
+                        for item in results[:5]
+                    ]
+                )
+
+            data = YoutubeTracking(
+
+                link=link,
+
+                channel_name=channel_name,
+
+                strip_name=matched_strip
+            )
+
+            db.session.add(data)
+
+            db.session.commit()
+
+            flash(
+                "Link added successfully",
+                "success"
+            )
+
+        return redirect(
+            url_for(
+                "dashboard.yt_automation"
+            )
+        )
+
+    links = YoutubeTracking.query.order_by(
+
+        YoutubeTracking.id.desc()
+
+    ).all()
+
+    channels = YoutubeChannel.query.all()
+
+    return render_template(
+
+        "dashboard/yt_automation.html",
+
+        links=links,
+
+        channels=channels
+    )
+
+
+@dashboard_bp.route(
+    "/workspace/fb-automation"
+)
+@login_required
+def fb_automation():
+
+    return render_template(
+        "dashboard/fb_automation.html"
+    )
+
+
+@dashboard_bp.route(
+
+    "/workspace/add-channel",
+
+    methods=["POST"]
+)
+
+@login_required
+def add_channel():
+
+    channel_name = request.form.get(
+        "channel_name"
+    )
+
+    channel_url = request.form.get(
+        "channel_url"
+    )
+
+    new_channel = YoutubeChannel(
+
+        channel_name=channel_name,
+
+        channel_url=channel_url
+    )
+
+    db.session.add(
+        new_channel
+    )
+
+    db.session.commit()
+
+    flash(
+
+        "Channel Added",
+
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "dashboard.yt_automation"
+        )
     )
 

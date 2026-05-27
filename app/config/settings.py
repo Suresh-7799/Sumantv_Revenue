@@ -1,12 +1,21 @@
 import os
+
 from dotenv import load_dotenv
+
+from datetime import timedelta
 
 load_dotenv()
 
 
 class Config:
 
-    SECRET_KEY = os.getenv("SECRET_KEY")
+    SECRET_KEY = os.getenv(
+        "SECRET_KEY"
+    )
+
+    # =========================
+    # DATABASE
+    # =========================
 
     database_url = os.getenv(
         "DATABASE_URL"
@@ -25,10 +34,15 @@ class Config:
 
             database_url += "?sslmode=require"
 
-
-    SQLALCHEMY_DATABASE_URI = database_url
+    SQLALCHEMY_DATABASE_URI = (
+        database_url
+    )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # =========================
+    # SECURITY
+    # =========================
 
     MAX_CONTENT_LENGTH = (
         10 * 1024 * 1024
@@ -42,22 +56,48 @@ class Config:
 
     SESSION_COOKIE_SECURE = (
         os.getenv(
-            "SESSION_COOKIE_SECURE"
+            "SESSION_COOKIE_SECURE",
+            "False"
         ) == "True"
     )
+
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     REMEMBER_COOKIE_HTTPONLY = True
 
     REMEMBER_COOKIE_SECURE = (
         os.getenv(
-            "REMEMBER_COOKIE_SECURE"
+            "REMEMBER_COOKIE_SECURE",
+            "False"
         ) == "True"
     )
 
-    MAIL_SERVER = os.getenv("MAIL_SERVER")
-    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+
+    PERMANENT_SESSION_LIFETIME = (
+        timedelta(hours=2)
+    )
+
+    # =========================
+    # MAIL
+    # =========================
+
+    MAIL_SERVER = os.getenv(
+        "MAIL_SERVER"
+    )
+
+    MAIL_PORT = int(
+        os.getenv(
+            "MAIL_PORT",
+            587
+        )
+    )
+
     MAIL_USE_TLS = (
-        os.getenv("MAIL_USE_TLS") == "True"
+        os.getenv(
+            "MAIL_USE_TLS",
+            "True"
+        ) == "True"
     )
 
     MAIL_USERNAME = os.getenv(
@@ -78,8 +118,14 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+
     DEBUG = True
 
 
 class ProductionConfig(Config):
+
     DEBUG = False
+
+    SESSION_COOKIE_SECURE = True
+
+    REMEMBER_COOKIE_SECURE = True

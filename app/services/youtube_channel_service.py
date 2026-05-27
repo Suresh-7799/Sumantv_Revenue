@@ -1,0 +1,1 @@
+yt-dlp --flat-playlist

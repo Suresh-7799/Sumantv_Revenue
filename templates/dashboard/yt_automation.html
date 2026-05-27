@@ -1,0 +1,367 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/yt_automation.css') }}"
+>
+{% endblock %}
+
+{% block page_title %}
+YT Automation
+{% endblock %}
+
+{% block dashboard_content %}
+
+<div class="yt-topbar">
+
+    <h1 class="yt-main-title">
+        YT Automation
+    </h1>
+
+    <div class="yt-top-actions">
+
+        <button
+            class="filter-toggle-btn"
+            id="filterToggleBtn"
+        >
+
+            Filters
+
+        </button>
+
+        <button
+            type="button"
+            class="add-channel-btn"
+            id="openChannelModal"
+        >
+
+            +
+
+        </button>
+
+    </div>
+
+</div>
+
+<form
+    method="POST"
+    action="/workspace/run-channel-scan"
+    class="filter-panel"
+    id="filterPanel"
+>
+
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <select
+        name="channel_id"
+        class="filter-input"
+        required
+    >
+
+        <option
+            value=""
+        >
+
+            Select Channel
+
+        </option>
+
+        {% for channel in channels %}
+
+        <option
+            value="{{ channel.id }}"
+        >
+
+            {{ channel.channel_name }}
+
+        </option>
+
+        {% endfor %}
+
+    </select>
+
+    <input
+        type="date"
+        name="from_date"
+        class="filter-input"
+        required
+    >
+
+    <input
+        type="date"
+        name="to_date"
+        class="filter-input"
+        required
+    >
+
+    <button
+        type="submit"
+        class="run-scan-btn"
+    >
+
+        Run Scan
+
+    </button>
+
+</form>
+
+<div
+    class="channel-modal-overlay"
+    id="channelModal"
+>
+
+    <div class="channel-modal">
+
+        <div class="modal-header">
+
+            <h2>
+                Add Channel
+            </h2>
+
+            <button
+                class="close-modal-btn"
+                id="closeChannelModal"
+            >
+
+                ×
+
+            </button>
+
+        </div>
+
+        <form
+            method="POST"
+            action="/workspace/add-channel"
+            class="modal-form"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <input
+                type="text"
+                name="channel_name"
+                placeholder="Channel Name"
+                required
+            >
+
+            <input
+                type="text"
+                name="channel_url"
+                placeholder="Channel URL"
+                required
+            >
+
+            <button type="submit">
+
+                Save Channel
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<form
+    method="POST"
+    class="yt-manual-form"
+>
+
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <input
+        type="text"
+        name="youtube_link"
+        class="yt-manual-input"
+        placeholder="Paste YouTube Link..."
+        required
+    >
+
+    <button
+        type="submit"
+        class="yt-manual-btn"
+    >
+
+        Save Link
+
+    </button>
+
+</form>
+
+<div class="table-actions-bar">
+
+    <div class="table-right-actions">
+
+        <button
+            type="button"
+            class="table-menu-btn"
+            id="tableMenuBtn"
+        >
+
+            ⋯
+
+        </button>
+
+        <div
+            class="table-dropdown"
+            id="tableDropdown"
+        >
+
+            <button
+                type="button"
+                id="editSelectedBtn"
+                class="table-dropdown-btn"
+            >
+
+                Edit
+
+            </button>
+
+            <button
+                type="button"
+                id="deleteSelectedBtn"
+                class="table-dropdown-btn"
+            >
+
+                Delete
+
+            </button>
+
+            <button
+                type="button"
+                id="exportSelectedBtn"
+                class="table-dropdown-btn"
+            >
+
+                Export
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="results-table-wrapper">
+
+    <table class="results-table">
+
+        <thead>
+
+            <tr>
+
+                <th>
+
+                    <input
+                        type="checkbox"
+                        id="headerCheckbox"
+                    >
+
+                </th>
+
+                <th>ID</th>
+
+                <th>Channel</th>
+
+                <th>Link</th>
+
+                <th>Strip</th>
+
+                <th>Publish Date</th>
+
+                <th>Video Title</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for item in links %}
+
+            <tr>
+
+                <td>
+
+                    <input
+                        type="checkbox"
+                        class="row-checkbox"
+                        value="{{ item.id }}"
+                    >
+
+                </td>
+
+                <td>
+                    {{ item.id }}
+                </td>
+
+                <td>
+                    {{ item.channel_name }}
+                </td>
+
+                <td>
+
+                    <a
+                        href="{{ item.link }}"
+                        target="_blank"
+                    >
+
+                        Open Video
+
+                    </a>
+
+                </td>
+
+                <td>
+                    {{ item.strip_name }}
+                </td>
+
+                <td>
+                    {{ item.created_at }}
+                </td>
+
+                <td>
+                    {{ item.link }}
+                </td>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    class="empty-table"
+                >
+
+                    No Results Found
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
