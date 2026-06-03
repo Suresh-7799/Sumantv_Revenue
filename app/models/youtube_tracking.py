@@ -10,9 +10,15 @@ class YoutubeTracking(db.Model):
         primary_key=True
     )
 
-    link = db.Column(
+
+    video_title = db.Column(
+        db.String(500)
+    )
+
+    video_url = db.Column(
         db.Text,
-        nullable=False
+        nullable=False,
+        unique=True
     )
 
     channel_name = db.Column(
@@ -23,7 +29,12 @@ class YoutubeTracking(db.Model):
         db.String(255)
     )
 
+    published_date = db.Column(
+        db.String(20)
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
     )
+

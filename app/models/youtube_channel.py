@@ -23,3 +23,13 @@ class YoutubeChannel(db.Model):
         db.DateTime,
         server_default=db.func.now()
     )
+
+    last_scan_at = db.Column(
+        db.DateTime
+    )
+
+    is_active = db.Column(
+        db.Boolean,
+        default=True
+    )
+

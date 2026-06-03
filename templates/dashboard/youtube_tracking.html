@@ -1,42 +1,482 @@
 {% extends "layouts/dashboard_layout.html" %}
 
+{% block extra_css %}
+
+<link
+    rel="stylesheet"
+    href="{{ url_for(
+        'static',
+        filename='css/youtube_tracking.css'
+    ) }}"
+>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script
+    defer
+    src="{{ url_for(
+        'static',
+        filename='js/youtube_tracking.js'
+    ) }}"
+></script>
+
+{% endblock %}
+
 {% block page_title %}
 YouTube Tracking
 {% endblock %}
 
 {% block dashboard_content %}
 
-<h1>
-    YouTube Tracking
-</h1>
+<div class="yt-topbar">
 
-<form method="POST">
+    <h1 class="yt-main-title">
 
-    <input
-        type="text"
-        name="youtube_link"
-        placeholder="Paste YouTube Link"
-        required
-    >
+        YouTube Tracking
 
-    <button type="submit">
-        Save
-    </button>
+    </h1>
 
-</form>
+    <div class="yt-top-actions">
 
-<hr>
+        <button
+            type="button"
+            class="add-channel-btn"
+            id="openChannelModal"
+        >
 
-{% for item in links %}
+            + Add Channel
 
-<div>
+        </button>
 
-    <p>
-        {{ item.link }}
-    </p>
+        <button
+            type="button"
+            class="export-btn"
+            id="exportBtn"
+        >
+
+            ⭳
+
+        </button>
+
+    </div>
 
 </div>
 
-{% endfor %}
+<div class="filter-panel">
+
+    <div class="filter-left-group">
+
+        <select
+            id="channelSelect"
+            name="channel_id"
+            class="filter-input"
+        >
+
+            <option value="">
+
+                Select Channel
+
+            </option>
+
+            {% for channel in channels %}
+
+            <option
+                value="{{ channel.id }}"
+                data-url="{{ channel.channel_url }}"
+            >
+
+                {{ channel.channel_name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+        <button
+            type="button"
+            class="open-channel-btn"
+            id="openChannelBtn"
+            title="Open Channel"
+        >
+
+            ↗
+
+        </button>
+
+    </div>
+
+    <form
+        method="POST"
+        class="filter-right-group"
+        action="/workspace/save-tracking-link"
+        id="saveLinkForm"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+
+        <input
+            type="text"
+            name="video_url"
+            class="yt-manual-input"
+            placeholder="Paste YouTube Link..."
+            required
+        >
+
+        <button
+            type="submit"
+            class="yt-manual-btn"
+        >
+
+            Save Link
+
+        </button>
+
+    </form>
+
+</div>
+
+<div
+    class="channel-modal-overlay"
+    id="channelModal"
+>
+
+    <div class="channel-modal">
+
+        <div class="modal-header">
+
+            <h2>
+
+                Add Channel
+
+            </h2>
+
+            <button
+                class="close-modal-btn"
+                id="closeChannelModal"
+            >
+
+                ×
+
+            </button>
+
+        </div>
+
+        <form
+            method="POST"
+            action="/workspace/add-channel"
+            class="modal-form"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <input
+                type="text"
+                name="channel_name"
+                placeholder="Channel Name"
+                required
+            >
+
+            <input
+                type="text"
+                name="channel_url"
+                placeholder="Channel URL"
+                required
+            >
+
+            <button
+                type="submit"
+                class="channel-save-btn"
+            >
+
+                Save Channel
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<div class="tracking-content">
+
+    {% if channels %}
+
+        {% for channel in channels %}
+
+        <div class="channel-accordion">
+
+            <div
+                class="channel-accordion-header"
+                data-channel="{{ channel.id }}"
+            >
+
+                <div>
+
+                    <span class="accordion-arrow">
+
+                        ▼
+
+                    </span>
+
+                    <span class="accordion-title">
+
+                        {{ channel.channel_name }}
+
+                    </span>
+
+                </div>
+
+                <div class="accordion-count">
+
+                    {{ tracking_rows
+                        | selectattr(
+                            "channel_name",
+                            "equalto",
+                            channel.channel_name
+                        )
+                        | list
+                        | length }}
+
+                    Links
+
+                </div>
+
+            </div>
+
+            <div
+                class="channel-accordion-body"
+                id="channel-body-{{ channel.id }}"
+            >
+
+                {% set channel_links = tracking_rows
+                    | selectattr(
+                        "channel_name",
+                        "equalto",
+                        channel.channel_name
+                    )
+                    | list %}
+
+                {% if channel_links %}
+
+                <table class="tracking-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+
+                                S.No
+
+                            </th>
+
+                            <th>
+
+                                Strip
+
+                            </th>
+
+                            <th>
+
+                                Link
+
+                            </th>
+
+                            <th>
+
+                                Publish Date
+
+                            </th>
+
+                            <th>
+
+                                Open
+
+                            </th>
+
+                            <th>
+
+                                Edit
+
+                            </th>
+
+                            <th>
+
+                                Delete
+
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in channel_links %}
+
+                        <tr data-id="{{ item.id }}">
+
+                            <td>
+
+                                {{ loop.index }}
+
+                            </td>
+
+                            <td class="strip-cell">
+
+                                {{ item.strip_name }}
+
+                            </td>
+
+                            <td class="link-cell">
+
+                                {{ item.video_url[:50] }}...
+
+                            </td>
+
+                            <td class="date-cell">
+
+                                {{ item.published_date }}
+
+                            </td>
+
+                            <td>
+
+                                <a
+                                    href="{{ item.video_url }}"
+                                    target="_blank"
+                                    class="table-action-btn"
+                                >
+
+                                    ↗
+
+                                </a>
+
+                            </td>
+
+                            <td class="edit-column">
+
+                                <button
+                                    type="button"
+                                    class="table-action-btn edit-link-btn"
+                                    data-id="{{ item.id }}"
+                                >
+
+                                    ✎
+
+                                </button>
+
+                            </td>
+
+                            <td class="delete-column">
+
+                                <button
+                                    type="button"
+                                    class="table-action-btn delete-link-btn"
+                                    data-id="{{ item.id }}"
+                                >
+
+                                    🗑
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+                {% else %}
+
+                <div class="empty-channel">
+
+                    No links found
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+    <div class="empty-state">
+
+        No channels added yet
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="export-modal"
+    id="exportModal"
+>
+
+    <div class="export-box">
+
+        <h3>
+
+            Export Data
+
+        </h3>
+
+        <button
+            type="button"
+            id="exportSelectedChannel"
+            class="export-option"
+        >
+
+            Export Selected Channel
+
+        </button>
+
+        <button
+            type="button"
+            id="exportAllChannels"
+            class="export-option"
+        >
+
+            Export All Channels
+
+        </button>
+
+        <button
+            type="button"
+            id="closeExportModal"
+            class="export-close-btn"
+        >
+
+            Close
+
+        </button>
+
+    </div>
+
+</div>
 
 {% endblock %}

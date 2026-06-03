@@ -2,20 +2,68 @@ import os
 import time
 from datetime import datetime
 
-from app.models.youtube_channel import YoutubeChannel
+from app.models.commercial_channel import CommercialChannel
+from app.models.commercial_client import CommercialClient
+from app.models.commercial_result import CommercialResult
 
-from app.extensions import db
+import csv
+from io import StringIO
+from flask import Response
 
 from app.models.youtube_tracking import (
     YoutubeTracking
 )
 
+from yt_dlp import YoutubeDL
+import traceback
+
+import threading
+
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed
+)
+
+SCAN_RUNNING = False
+
+COMMERCIAL_SCAN_RUNNING = False
+
+
+from app.models.youtube_channel import YoutubeChannel
+
+
+from app.models.youtube_strip_result import (
+    YoutubeStripResult
+)
+
+from app.extensions import db
+
+
 from app.services.youtube_ocr_service import (
     scan_youtube_video
 )
 
+from app.services.youtube_tracking_ocr import (
+    scan_youtube_video as tracking_scan_youtube_video
+)
+
+from app.services.commercials.channel_scraper import (
+    get_latest_videos
+)
+
+from app.services.commercials.commercial_scanner import (
+    process_frames
+)
+
+from app.services.commercials.video_downloader import (
+    download_video
+)
+
+from app.services.commercials.frame_extractor import (
+    extract_frames
+)
+
 from app.dashboard import dashboard_bp
-from app.admin import admin_bp
 
 from app.realtime.socket import (
     format_timestamp
@@ -48,9 +96,7 @@ from werkzeug.utils import (
     secure_filename
 )
 
-from app.dashboard import (
-    dashboard_bp
-)
+import json
 
 from app.extensions import (
 
@@ -91,6 +137,237 @@ from app.services.chat_service import (
     save_chat_file
 )
 
+
+def background_scan(
+
+    app,
+
+    channel_id,
+
+    video_count
+):
+    
+    print(
+        "\nBACKGROUND SCAN STARTED\n"
+    )
+    
+
+    global SCAN_RUNNING
+
+    with app.app_context():
+
+        SCAN_RUNNING = True
+
+        try:
+
+            channel = YoutubeChannel.query.get(
+                channel_id
+            )
+
+            if not channel:
+
+                return
+
+            ydl_opts = {
+
+                "extract_flat": True,
+
+                "quiet": True,
+
+                "ignoreerrors": True
+                
+            }
+            
+
+            with YoutubeDL(
+                ydl_opts
+            ) as ydl:
+
+                playlist_url = channel.channel_url
+
+                if not playlist_url.endswith("/videos"):
+
+                    playlist_url += "/videos"
+
+                info = ydl.extract_info(
+
+                    playlist_url,
+
+                    download=False
+                )
+
+                entries = info.get(
+                    "entries",
+                    []
+                )
+
+                entries = list(entries)[
+                    :video_count
+                ]
+
+                print(
+                    f"TOTAL ENTRIES : {len(entries)}"
+                )
+
+
+            def process_video(entry):
+
+                with app.app_context():
+
+                    global SCAN_RUNNING
+
+                    if not SCAN_RUNNING:
+
+                        return
+
+                    video_id = entry.get(
+                        "id"
+                    )
+
+                    if not video_id:
+
+                        return
+
+                    video_url = (
+
+                        f"https://www.youtube.com/watch?v="
+                        f"{video_id}"
+                    )
+
+                    print(
+                        f"VIDEO = {video_url}"
+                    )
+
+                    existing_result = (
+                        YoutubeStripResult.query.filter_by(
+                            video_url=video_url
+                        ).first()
+                    )
+
+                    if existing_result:
+
+                        return
+
+                    try:
+
+                        print(
+                            f"OCR START : {video_url}"
+                        )
+
+                        scan_data = scan_youtube_video(
+                            video_url
+                        )
+
+                    except Exception as error:
+
+                        print(error)
+
+                        return
+
+                    results = scan_data.get(
+                        "results",
+                        []
+                    )
+
+                    if (
+
+                        not results
+
+                        or
+
+                        results[0]["text"] == "No Strip Found"
+                    ):
+
+                        return
+
+                    matched_strip = " | ".join(
+
+                        [
+                            item["text"]
+                            for item in results[:5]
+                        ]
+                    )
+
+                    data = YoutubeStripResult(
+
+                        channel_name=channel.channel_name,
+
+                        video_title=scan_data.get(
+                            "video_title"
+                        ),
+
+                        video_url=video_url,
+
+                        strip_text=matched_strip,
+
+                        detected_time=results[0]["time"]
+                    )
+
+                    db.session.add(data)
+
+                    db.session.commit()
+
+                    print(
+                        f"Saved: {video_url}"
+                    )
+
+            print(
+                "THREAD START"
+            )
+
+            with ThreadPoolExecutor(
+                max_workers=3
+            ) as executor:
+
+                futures = [
+
+                    executor.submit(
+                        process_video,
+                        entry
+                    )
+
+                    for entry in entries
+                ]
+
+                for future in as_completed(
+                    futures
+                ):
+
+                    try:
+
+                        future.result()
+
+                    except Exception as error:
+
+                        print(
+                            f"THREAD ERROR : {error}"
+                        )
+
+        except Exception as error:
+
+            print(
+                "\nSCAN ERROR\n"
+            )
+
+            print(
+                error
+            )
+
+            traceback.print_exc()
+
+            print(
+                f"ERROR = {error}"
+            )
+
+        finally:
+
+            db.session.remove()
+
+            SCAN_RUNNING = False
+
+            print(
+                "\nSCAN STOPPED\n"
+            )
 
 # =========================
 # CONFIG
@@ -1517,14 +1794,6 @@ def delete_message_for_me():
         message_id
     )
 
-    if not message:
-
-        return jsonify({
-
-            "success": False
-
-        }), 404
-
     existing = ChatMessageVisibility.query.filter_by(
 
         message_id=message.id,
@@ -1735,9 +2004,257 @@ def workspace():
 @login_required
 def youtube_tracking():
 
-    return render_template(
-        "dashboard/youtube_tracking.html"
+    channels = YoutubeChannel.query.all()
+
+    tracking_rows = (
+
+        YoutubeTracking.query
+
+        .order_by(
+            YoutubeTracking.id.desc()
+        )
+
+        .all()
     )
+
+    return render_template(
+
+        "dashboard/youtube_tracking.html",
+
+        channels=channels,
+
+        tracking_rows=tracking_rows
+    )
+
+
+@dashboard_bp.route(
+
+    "/workspace/save-tracking-link",
+
+    methods=["POST"]
+)
+@login_required
+def save_tracking_link():
+
+    video_url = request.form.get(
+        "video_url"
+    )
+
+    if not video_url:
+
+        return redirect(
+            url_for(
+                "dashboard.youtube_tracking"
+            )
+        )
+
+    existing = YoutubeTracking.query.filter_by(
+        video_url=video_url
+    ).first()
+
+    if existing:
+
+        flash(
+            "Already Exists",
+            "warning"
+        )
+
+        return redirect(
+            url_for(
+                "dashboard.youtube_tracking"
+            )
+        )
+
+    tracking = YoutubeTracking(
+
+        video_url=video_url,
+
+        video_title="Loading...",
+
+        channel_name="Loading...",
+
+        strip_name="Loading...",
+
+        published_date="Loading..."
+    )
+
+    db.session.add(
+        tracking
+    )
+
+    db.session.commit()
+
+    thread = threading.Thread(
+
+        target=background_tracking_scan,
+
+        args=(
+
+            current_app._get_current_object(),
+
+            tracking.id,
+
+            video_url
+        ),
+
+        daemon=True
+    )
+
+    thread.start()
+
+    return redirect(
+        url_for(
+            "dashboard.youtube_tracking"
+        )
+    )
+
+
+@dashboard_bp.route(
+
+    "/workspace/delete-tracking-link",
+
+    methods=["POST"]
+)
+@login_required
+def delete_tracking_link():
+
+    data = request.get_json()
+
+    row_id = data.get(
+        "id"
+    )
+
+    row = YoutubeTracking.query.get(
+        row_id
+    )
+
+    if not row:
+
+        return jsonify({
+
+            "success": False
+        })
+
+    db.session.delete(
+        row
+    )
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+@dashboard_bp.route(
+
+    "/workspace/edit-tracking-link",
+
+    methods=["POST"]
+)
+@login_required
+def edit_tracking_link():
+
+    data = request.get_json()
+
+    row_id = data.get(
+        "id"
+    )
+
+    strip_name = data.get(
+        "strip_name"
+    )
+
+    video_url = data.get(
+        "video_url"
+    )
+
+    published_date = data.get(
+        "published_date"
+    )
+
+    row = YoutubeTracking.query.get(
+        row_id
+    )
+
+    if not row:
+
+        return jsonify({
+
+            "success": False
+        })
+
+    row.strip_name = strip_name
+
+    row.video_url = video_url
+
+    row.published_date = published_date
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+@dashboard_bp.route(
+    "/workspace/export-tracking"
+)
+@login_required
+def export_tracking():
+
+    query = YoutubeTracking.query
+
+    rows = query.all()
+
+    output = StringIO()
+
+    writer = csv.writer(
+        output
+    )
+
+    writer.writerow([
+
+        "Video Title",
+
+        "Video URL",
+
+        "Published Date",
+
+        "Added Date"
+    ])
+
+    for row in rows:
+
+        writer.writerow([
+
+            row.video_title,
+
+            row.video_url,
+
+            row.published_date,
+
+            row.created_at
+        ])
+
+    return Response(
+
+        output.getvalue(),
+
+        mimetype="text/csv",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=youtube_tracking.csv"
+        }
+    )
+
+
+
+
+
 
 
 @dashboard_bp.route(
@@ -1751,87 +2268,41 @@ def facebook_tracking():
     )
 
 
+
+
+
+
+
 @dashboard_bp.route(
-    "/workspace/yt-automation",
-    methods=["GET", "POST"]
+    "/workspace/yt-automation"
 )
 @login_required
 def yt_automation():
 
-    if request.method == "POST":
-
-        link = request.form.get(
-            "youtube_link"
+    strip_results = (
+        YoutubeStripResult.query
+        .order_by(
+            YoutubeStripResult.id.desc()
         )
+        .all()
+    )
 
-        if link:
-
-            scan_data = scan_youtube_video(
-                link
-            )
-            
-            channel_name = scan_data.get(
-                "channel_name"
-            )
-
-            results = scan_data.get(
-                "results",
-                []
-            )
-
-            matched_strip = "No strip found"
-
-            if results:
-
-                matched_strip = " | ".join(
-
-                    [
-                        item["text"]
-                        for item in results[:5]
-                    ]
-                )
-
-            data = YoutubeTracking(
-
-                link=link,
-
-                channel_name=channel_name,
-
-                strip_name=matched_strip
-            )
-
-            db.session.add(data)
-
-            db.session.commit()
-
-            flash(
-                "Link added successfully",
-                "success"
-            )
-
-        return redirect(
-            url_for(
-                "dashboard.yt_automation"
-            )
+    channels = (
+        YoutubeChannel.query
+        .order_by(
+            YoutubeChannel.id.desc()
         )
-
-    links = YoutubeTracking.query.order_by(
-
-        YoutubeTracking.id.desc()
-
-    ).all()
-
-    channels = YoutubeChannel.query.all()
+        .all()
+    )
 
     return render_template(
 
         "dashboard/yt_automation.html",
 
-        links=links,
+        strip_results=strip_results,
 
         channels=channels
     )
-
 
 @dashboard_bp.route(
     "/workspace/fb-automation"
@@ -1844,13 +2315,190 @@ def fb_automation():
     )
 
 
+
+
+def background_tracking_scan(
+
+    app,
+
+    tracking_id,
+
+    video_url
+):
+
+    with app.app_context():
+
+        try:
+
+            tracking = YoutubeTracking.query.get(
+                tracking_id
+            )
+
+            if not tracking:
+
+                return
+
+            scan_data = tracking_scan_youtube_video(
+                video_url
+            )
+
+            from yt_dlp import YoutubeDL
+
+            channel_url = ""
+
+            with YoutubeDL({
+
+                "quiet": True
+
+            }) as ydl:
+
+                info = ydl.extract_info(
+
+                    video_url,
+
+                    download=False
+                )
+
+                channel_id = info.get(
+                    "channel_id"
+                )
+
+                if channel_id:
+
+                    channel_url = (
+                        f"https://www.youtube.com/channel/{channel_id}"
+                    )
+
+            print(
+                scan_data
+            )
+
+            from yt_dlp import YoutubeDL
+
+            publish_date = "-"
+
+            try:
+
+                with YoutubeDL({
+
+                    "quiet": True
+
+                }) as ydl:
+
+                    info = ydl.extract_info(
+
+                        video_url,
+
+                        download=False
+                    )
+
+                    raw_date = info.get(
+                        "upload_date",
+                        ""
+                    )
+
+                    if len(raw_date) == 8:
+
+                        publish_date = (
+
+                            f"{raw_date[:4]}-"
+                            f"{raw_date[4:6]}-"
+                            f"{raw_date[6:]}"
+                        )
+
+                    else:
+
+                        publish_date = "-"
+
+            except Exception as error:
+
+                print(
+                    f"DATE ERROR: {error}"
+                )
+
+            results = scan_data.get(
+                "results",
+                []
+            )
+
+            print(
+                f"OCR RESULTS = {results}"
+            )
+
+            tracking.channel_name = (
+                scan_data.get(
+                    "channel_name",
+                    "Unknown"
+                )
+            )
+
+            existing_channel = (
+                YoutubeChannel.query.filter_by(
+                    channel_name=tracking.channel_name
+                ).first()
+            )
+
+            if not existing_channel:
+
+                new_channel = YoutubeChannel(
+
+                    channel_name=tracking.channel_name,
+
+                    channel_url=channel_url,
+
+                    is_active=True
+                )
+
+                db.session.add(
+                    new_channel
+                )
+
+            tracking.video_title = (
+                scan_data.get(
+                    "video_title",
+                    "Unknown"
+                )
+            )
+
+            tracking.published_date = (
+                publish_date
+            )
+
+            if results:
+
+                tracking.strip_name = (
+
+                    results[0].get(
+                        "text",
+                        "No Strip Found"
+                    )
+                )
+
+            else:
+
+                tracking.strip_name = (
+                    "No Strip Found"
+                )
+
+            db.session.commit()
+
+        except Exception as error:
+
+            print(
+                f"TRACKING OCR ERROR : {error}"
+            )
+
+            db.session.rollback()
+
+
+            
+
 @dashboard_bp.route(
 
     "/workspace/add-channel",
 
     methods=["POST"]
 )
-
 @login_required
 def add_channel():
 
@@ -1862,29 +2510,824 @@ def add_channel():
         "channel_url"
     )
 
-    new_channel = YoutubeChannel(
+    if not channel_name or not channel_url:
 
-        channel_name=channel_name,
+        flash(
+
+            "Channel name and URL required",
+
+            "warning"
+        )
+
+        return redirect(
+
+            url_for(
+                "dashboard.yt_automation"
+            )
+        )
+
+    existing_channel = YoutubeChannel.query.filter_by(
 
         channel_url=channel_url
-    )
 
-    db.session.add(
-        new_channel
-    )
+    ).first()
 
-    db.session.commit()
+    if existing_channel:
 
-    flash(
+        flash(
 
-        "Channel Added",
+            "Channel already exists",
 
-        "success"
-    )
+            "warning"
+        )
+
+        return redirect(
+
+            url_for(
+                "dashboard.yt_automation"
+            )
+        )
+
+    try:
+
+        new_channel = YoutubeChannel(
+
+            channel_name=channel_name,
+
+            channel_url=channel_url,
+
+            is_active=True
+        )
+
+        db.session.add(
+            new_channel
+        )
+
+        db.session.commit()
+
+        flash(
+
+            "Channel Added",
+
+            "success"
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(error)
+
+        flash(
+
+            "Failed to add channel",
+
+            "danger"
+        )
 
     return redirect(
+
         url_for(
             "dashboard.yt_automation"
         )
     )
 
+
+@dashboard_bp.route(
+
+    "/workspace/run-channel-scan",
+
+    methods=["POST"]
+)
+@login_required
+def run_channel_scan():
+
+    print(
+        "\nRUN BUTTON CLICKED\n"
+    )
+
+    global SCAN_RUNNING
+
+    if SCAN_RUNNING:
+
+        flash(
+
+            "Scan already running",
+
+            "warning"
+        )
+
+        return redirect(
+
+            url_for(
+                "dashboard.yt_automation"
+            )
+        )
+
+    channel_id = request.form.get(
+        "channel_id"
+    )
+
+    video_count = int(
+
+        request.form.get(
+            "video_count",
+            50
+        )
+    )
+
+    if not channel_id:
+
+        flash(
+
+            "Select a channel",
+
+            "warning"
+        )
+
+        return redirect(
+
+            url_for(
+                "dashboard.yt_automation"
+            )
+        )
+    
+    SCAN_RUNNING = True
+    
+    thread = threading.Thread(
+
+        target=background_scan,
+
+        args=(
+
+            current_app._get_current_object(),
+
+            channel_id,
+
+            video_count
+        ),
+
+        daemon=True
+    )
+
+    thread.start()
+
+    print(
+        f"THREAD STARTED : {channel_id}"
+    )
+
+    flash(
+
+        "Background scan started",
+
+        "success"
+    )
+
+    return redirect(
+
+        url_for(
+            "dashboard.yt_automation"
+        )
+    )
+
+@dashboard_bp.route(
+
+    "/workspace/stop-channel-scan",
+
+    methods=["POST"]
+)
+@login_required
+def stop_channel_scan():
+
+    global SCAN_RUNNING
+
+    SCAN_RUNNING = False
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+
+@dashboard_bp.route(
+    "/workspace/scan-status"
+)
+@login_required
+def scan_status():
+
+    return jsonify({
+
+        "running": SCAN_RUNNING
+    })
+
+
+@dashboard_bp.route(
+    "/workspace/delete-strip-results",
+    methods=["POST"]
+)
+@login_required
+def delete_strip_results():
+
+    data = request.get_json()
+
+    ids = data.get(
+        "ids",
+        []
+    )
+
+    try:
+
+        YoutubeStripResult.query.filter(
+
+            YoutubeStripResult.id.in_(ids)
+
+        ).delete(
+
+            synchronize_session=False
+        )
+
+        db.session.commit()
+
+        return jsonify({
+
+            "success": True
+        })
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(error)
+
+        return jsonify({
+
+            "success": False
+        })
+
+@dashboard_bp.route(
+    "/workspace/update-strip-result",
+    methods=["POST"]
+)
+@login_required
+def update_strip_result():
+
+    data = request.get_json()
+
+    row_id = data.get(
+        "id"
+    )
+
+    strip_name = data.get(
+        "strip_name"
+    )
+
+    row = YoutubeStripResult.query.get(
+        row_id
+    )
+
+    if not row:
+
+        return jsonify({
+
+            "success": False
+        })
+
+    row.strip_text = strip_name
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+
+@dashboard_bp.route(
+    "/workspace/commercials"
+)
+@login_required
+def commercials():
+
+    return render_template(
+        "dashboard/commercials.html"
+    )
+
+    
+@dashboard_bp.route(
+    "/workspace/commercials/add-channel",
+    methods=["POST"]
+)
+@login_required
+def add_commercial_channel():
+
+    data = request.get_json()
+
+    channel = CommercialChannel(
+
+        channel_name=data["channel_name"],
+
+        channel_url=data["channel_url"]
+    )
+
+    db.session.add(channel)
+
+    db.session.commit()
+
+    return jsonify({
+        "success":True
+    })
+
+@dashboard_bp.route(
+    "/workspace/commercials/add-client",
+    methods=["POST"]
+)
+@login_required
+def add_commercial_client():
+
+    ad_name = request.form.get(
+        "ad_name"
+    )
+
+    ad_type = request.form.get(
+        "ad_type"
+    )
+
+    client_name = request.form.get(
+        "client_name"
+    )
+
+    client_acquisition = request.form.get(
+        "client_acquisition"
+    )
+
+    saved_images = []
+
+    files = request.files.getlist(
+        "sample_images"
+    )
+
+    upload_folder = os.path.join(
+
+        current_app.static_folder,
+
+        "uploads",
+
+        "commercials"
+    )
+
+    os.makedirs(
+
+        upload_folder,
+
+        exist_ok=True
+    )
+
+    for file in files:
+
+        if not file:
+
+            continue
+
+        filename = secure_filename(
+            file.filename
+        )
+
+        timestamp = str(
+            int(time.time())
+        )
+
+        filename = (
+            f"{timestamp}_{filename}"
+        )
+
+        absolute_path = os.path.join(
+
+            upload_folder,
+
+            filename
+        )
+
+        file.save(
+            absolute_path
+        )
+
+        saved_images.append(
+
+            f"/static/uploads/commercials/{filename}"
+        )
+
+    client = CommercialClient(
+
+        ad_name=ad_name,
+
+        ad_type=ad_type,
+
+        client_name=client_name,
+
+        client_acquisition=client_acquisition,
+
+        sample_images=json.dumps(
+            saved_images
+        )
+    )
+
+    db.session.add(
+        client
+    )
+
+    db.session.commit()
+
+    return jsonify({
+
+        "success":True
+    })
+
+@dashboard_bp.route(
+    "/workspace/commercials/clients"
+)
+@login_required
+def get_commercial_clients():
+
+    rows = CommercialClient.query.all()
+
+    return jsonify([
+
+        {
+
+            "id":x.id,
+
+            "ad_name":
+            x.ad_name,
+
+            "ad_type":
+            x.ad_type,
+
+            "client_name":
+            x.client_name,
+
+            "client_acquisition":
+            x.client_acquisition
+        }
+
+        for x in rows
+    ])
+
+@dashboard_bp.route(
+    "/workspace/commercials/channels"
+)
+@login_required
+def get_commercial_channels():
+
+    rows = CommercialChannel.query.all()
+
+    return jsonify([
+
+        {
+            "id":x.id,
+            "channel_name":x.channel_name,
+            "channel_url":x.channel_url
+        }
+
+        for x in rows
+    ])
+
+@dashboard_bp.route(
+    "/workspace/commercials/channel/<int:id>",
+    methods=["DELETE"]
+)
+@login_required
+def delete_commercial_channel(id):
+
+    row = CommercialChannel.query.get(id)
+
+    if row:
+
+        db.session.delete(row)
+
+        db.session.commit()
+
+    return jsonify({
+        "success":True
+    })
+
+@dashboard_bp.route(
+    "/workspace/commercials/channel/<int:id>",
+    methods=["PUT"]
+)
+@login_required
+def update_commercial_channel(id):
+
+    row = CommercialChannel.query.get_or_404(id)
+
+    data = request.get_json()
+
+    row.channel_name = data.get(
+        "channel_name"
+    )
+
+    row.channel_url = data.get(
+        "channel_url"
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        "success":True
+    })
+
+
+@dashboard_bp.route(
+    "/workspace/commercials/client/<int:id>",
+    methods=["PUT"]
+)
+@login_required
+def update_commercial_client(id):
+
+    row = CommercialClient.query.get_or_404(
+        id
+    )
+
+    ad_name = request.form.get(
+        "ad_name"
+    )
+
+    ad_type = request.form.get(
+        "ad_type"
+    )
+
+    client_name = request.form.get(
+        "client_name"
+    )
+
+    client_acquisition = request.form.get(
+        "client_acquisition"
+    )
+
+    row.ad_name = ad_name
+
+    row.ad_type = ad_type
+
+    row.client_name = client_name
+
+    row.client_acquisition = client_acquisition
+
+    db.session.commit()
+
+    return jsonify({
+        "success":True
+    })
+
+@dashboard_bp.route(
+    "/workspace/commercials/client/<int:id>",
+    methods=["DELETE"]
+)
+@login_required
+def delete_commercial_client(id):
+
+    row = CommercialClient.query.get(id)
+
+    if row:
+
+        db.session.delete(row)
+
+        db.session.commit()
+
+    return jsonify({
+        "success":True
+    })
+
+
+def background_commercial_scan(
+
+    app,
+
+    channel_id,
+
+    video_count
+):
+
+    global COMMERCIAL_SCAN_RUNNING
+
+    with app.app_context():
+
+        try:
+
+            print("\n")
+            print("=" * 60)
+            print("COMMERCIAL SCAN STARTED")
+            print("=" * 60)
+
+            channel = CommercialChannel.query.get(
+                channel_id
+            )
+
+            if not channel:
+
+                print(
+                    "CHANNEL NOT FOUND"
+                )
+
+                return
+
+            videos = get_latest_videos(
+
+                channel.channel_url,
+
+                video_count
+            )
+
+            print(
+                f"VIDEOS FOUND : {len(videos)}"
+            )
+
+            for video in videos:
+
+                if not COMMERCIAL_SCAN_RUNNING:
+
+                    print(
+                        "SCAN STOPPED"
+                    )
+
+                    break
+
+                video_url = video["url"]
+
+                print(
+                    f"\nVIDEO : {video_url}"
+                )
+
+                try:
+
+                    video_file = download_video(
+
+                        video_url,
+
+                        "temp/commercials/videos"
+                    )
+
+                    print(
+                        f"DOWNLOADED : {video_file}"
+                    )
+
+                    frame_folder = os.path.join(
+
+                        "temp",
+
+                        "commercials",
+
+                        "frames",
+
+                        video["video_id"]
+                    )
+
+                    extract_frames(
+
+                        video_file,
+
+                        frame_folder
+                    )
+
+                    frame_paths = []
+
+                    for file in os.listdir(
+                        frame_folder
+                    ):
+
+                        if file.endswith(
+                            ".jpg"
+                        ):
+
+                            frame_paths.append(
+
+                                os.path.join(
+
+                                    frame_folder,
+
+                                    file
+                                )
+                            )
+
+                    print(
+                        f"FRAMES : {len(frame_paths)}"
+                    )
+
+                    process_frames(
+
+                        frame_paths,
+
+                        channel.channel_name,
+
+                        video_url,
+
+                        "",
+
+                        0
+                    )
+
+                    print(
+                        "OCR COMPLETED"
+                    )
+
+                except Exception as error:
+
+                    print(
+                        f"OCR ERROR : {error}"
+                    )
+
+        except Exception as error:
+
+            print(error)
+
+        finally:
+
+            COMMERCIAL_SCAN_RUNNING = False
+
+            print("\n")
+            print("=" * 60)
+            print("COMMERCIAL SCAN FINISHED")
+            print("=" * 60)
+
+@dashboard_bp.route(
+    "/workspace/commercials/run-scan",
+    methods=["POST"]
+)
+@login_required
+def run_commercial_scan():
+
+    global COMMERCIAL_SCAN_RUNNING
+
+    if COMMERCIAL_SCAN_RUNNING:
+
+        return jsonify({
+            "success":False,
+            "message":"Scan already running"
+        })
+
+    data = request.get_json()
+
+    channel_id = data.get(
+        "channel_id"
+    )
+
+    video_count = int(
+        data.get(
+            "video_count",
+            10
+        )
+    )
+
+    channel = CommercialChannel.query.get(
+        channel_id
+    )
+
+    if not channel:
+
+        return jsonify({
+            "success":False
+        })
+
+    COMMERCIAL_SCAN_RUNNING = True
+
+    thread = threading.Thread(
+
+        target=background_commercial_scan,
+
+        args=(
+
+            current_app._get_current_object(),
+
+            channel.id,
+
+            video_count
+        ),
+
+        daemon=True
+    )
+
+    thread.start()
+
+    return jsonify({
+        "success":True
+    })
+
+@dashboard_bp.route(
+    "/workspace/commercials/stop-scan",
+    methods=["POST"]
+)
+@login_required
+def stop_commercial_scan():
+
+    global COMMERCIAL_SCAN_RUNNING
+
+    COMMERCIAL_SCAN_RUNNING = False
+
+    return jsonify({
+
+        "success": True
+    })
+
+
+
+            

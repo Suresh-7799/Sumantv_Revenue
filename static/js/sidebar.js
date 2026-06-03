@@ -92,22 +92,6 @@ window.addEventListener(
 );
 
 
-
-const sidebar =
-document.getElementById(
-    "appSidebar"
-);
-
-const overlay =
-document.getElementById(
-    "sidebarOverlay"
-);
-
-const toggle =
-document.getElementById(
-    "sidebarToggle"
-);
-
 /* =========================
    OPEN SIDEBAR
 ========================= */

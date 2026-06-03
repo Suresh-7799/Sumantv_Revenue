@@ -1,0 +1,740 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/commercials.css') }}"
+>
+{% endblock %}
+
+{% block page_title %}
+Commercials
+{% endblock %}
+
+{% block dashboard_content %}
+
+<div class="commercials-page">
+
+    <div class="commercial-header-row">
+
+        <div class="workspace-header">
+
+            <h1 class="workspace-title">
+                Commercials
+            </h1>
+
+            <p class="workspace-subtitle">
+                Manage channels, clients and commercial detections.
+            </p>
+
+        </div>
+
+    <div class="commercials-toolbar">
+
+    <div class="toolbar-left top-actions">
+
+        <div class="action-group">
+
+            <span class="action-label">
+                Channel
+            </span>
+
+            <div class="action-dropdown">
+
+                <button
+                    class="commercial-btn"
+                >
+                    Add / Manage ▼
+                </button>
+
+                <div class="dropdown-menu">
+
+                    <button
+                        id="openAddChannelBtn"
+                        type="button"
+                    >
+                        Add Channel
+                    </button>
+
+                    <button
+                        id="openManageChannelBtn"
+                        type="button"
+                    >
+                        Manage Channels
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="action-group">
+
+            <span class="action-label">
+                Client
+            </span>
+
+            <div class="action-dropdown">
+
+               <button
+                    class="commercial-btn"
+                >
+                    Add / Manage ▼
+                </button>
+
+                <div class="dropdown-menu">
+
+                    <button
+                        id="openAddClientBtn"
+                        type="button"
+                    >
+                        Add Client
+                    </button>
+
+                    <button
+                        id="openManageClientBtn"
+                        type="button"
+                    >
+                        Manage Clients
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="action-group export-group">
+
+            <button
+                class="commercial-btn secondary"
+            >
+                ⭳
+            </button>
+
+        </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FILTER BAR -->
+
+    <div class="commercial-filter-card">
+
+          <div class="commercial-toolbar-row">
+
+              <div class="toolbar-item">
+
+                  <label>Channel</label>
+
+                  <select
+                      id="channelSelect"
+                      class="commercial-select"
+                  >
+                      <option>
+                          Select Channel
+                      </option>
+                  </select>
+
+              </div>
+
+              <button
+                  id="openChannelLink"
+                  class="icon-btn"
+                  type="button"
+              >
+                  ↗
+              </button>
+
+              <div class="toolbar-item">
+
+                  <label>Scan Videos</label>
+
+                  <select
+                      id="videoCount"
+                      class="commercial-select"
+                  >
+                      <option value="10">Last 10 Videos</option>
+                      <option value="20">Last 20 Videos</option>
+                      <option value="30">Last 30 Videos</option>
+                      <option value="50">Last 50 Videos</option>
+                      <option value="100">Last 100 Videos</option>
+                  </select>
+
+              </div>
+
+              <button
+                  id="runCommercialScanBtn"
+                  class="icon-btn run-btn"
+                  type="button"
+              >
+                  ▶
+              </button>
+
+              <button
+                  id="stopCommercialScanBtn"
+                  style="display:none;"
+                  class="icon-btn stop-btn"
+                  type="button"
+              >
+                  ⏹
+              </button>
+
+              <div class="toolbar-item link-box">
+
+                  <label>Paste Video Link</label>
+
+                  <input
+                      id="videoUrlInput"
+                      type="text"
+                      class="commercial-input"
+                      placeholder="https://youtube.com/..."
+                  >
+
+              </div>
+
+              <button
+                  id="saveVideoBtn"
+                  class="save-link-btn"
+                  type="button"
+              >
+                  Save
+              </button>
+
+          </div>
+
+      </div>
+
+    </div>
+
+    </div>
+
+    <!-- RESULTS -->
+
+    <div class="commercial-table-card">
+
+    <div class="table-header results-header">
+
+        <div class="results-header-left">
+
+            <h2>
+                Advertisement Results
+            </h2>
+
+            <select
+                id="adFilter"
+                class="commercial-select ad-filter-select"
+            >
+
+                <option value="">
+                    Select Ad
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="results-actions">
+
+            <button
+                id="editSelectedBtn"
+                class="commercial-btn secondary"
+                disabled
+            >
+                Edit
+            </button>
+
+            <button
+                id="deleteSelectedBtn"
+                class="commercial-btn secondary"
+                disabled
+            >
+                Delete
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="table-wrapper">
+
+        <table class="commercial-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+
+                        <input
+                            type="checkbox"
+                            id="selectAllResults"
+                        >
+
+                    </th>
+
+                    <th>
+                        Ad Name
+                    </th>
+
+                    <th>
+                        Ad Type
+                    </th>
+
+                    <th>
+                        Channel Name
+                    </th>
+
+                    <th>
+                        Full Video URL
+                    </th>
+
+                    <th>
+                        Views
+                    </th>
+
+                    <th>
+                        Publish Date
+                    </th>
+
+                    <th>
+                        Client Acquisition
+                    </th>
+
+                    <th>
+                        Client Name
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="resultsTable">
+
+                <tr>
+
+                    <td colspan="9">
+
+                        No Results Found
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+    <!-- ADD CHANNEL MODAL -->
+
+    <div
+        id="addChannelModal"
+        class="commercial-modal"
+    >
+
+        <div class="commercial-modal-content">
+
+            <div class="modal-header">
+
+                <h2>
+                    Add Channel
+                </h2>
+
+                <button
+                    class="close-modal"
+                    data-close="channel"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+            <form id="addChannelForm">
+
+                <div class="commercial-field">
+
+                    <label>
+                        Channel Name
+                    </label>
+
+                    <input
+                        id="channelName"
+                        type="text"
+                        class="commercial-input"
+                        placeholder="Suman TV"
+                    >
+
+                </div>
+
+                <div class="commercial-field">
+
+                    <label>
+                        Channel Link
+                    </label>
+
+                    <input
+                        id="channelUrl"
+                        type="text"
+                        class="commercial-input"
+                        placeholder="https://youtube.com/@..."
+                    >
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="commercial-btn secondary"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        id="saveChannelBtn"
+                        type="submit"
+                        class="commercial-btn"
+                    >
+                        Save Channel
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- ADD CLIENT MODAL -->
+
+    <div
+        id="addClientModal"
+        class="commercial-modal"
+    >
+
+        <div class="commercial-modal-content large">
+
+            <div class="modal-header">
+
+                <h2>
+                    Add Client
+                </h2>
+
+                <button
+                    class="close-modal"
+                    data-close="client"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+            <form id="addClientForm">
+
+                <div class="commercial-field">
+
+                    <label>
+                        Ad Name
+                    </label>
+
+                    <input
+                        id="adName"
+                        type="text"
+                        class="commercial-input"
+                        placeholder=" vsource / BNR Gold"
+                    >
+
+                </div>
+
+                <div class="commercial-field">
+
+                    <label>
+                        Client Name (Optional)
+                    </label>
+
+                    <input
+                        id="clientName"
+                        type="text"
+                        class="commercial-input"
+                        placeholder="ex:Ramu, raju"
+                    >
+
+                </div>
+
+                <div class="commercial-field">
+
+                    <label>
+                        Ad Type
+                    </label>
+
+                    <select
+                        id="adType"
+                        class="commercial-select"
+                    >
+
+                        <option value="">
+                            Select Ad Type
+                        </option>
+
+                        <option>
+                            5 Sec Ad
+                        </option>
+
+                        <option>
+                            Banner
+                        </option>
+
+                        <option>
+                            Commercial Video
+                        </option>
+
+                        <option>
+                            Logo Placement
+                        </option>
+
+                        <option>
+                            Product Placement
+                        </option>
+
+                        <option>
+                            Sponsorship
+                        </option>
+
+                        <option>
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="commercial-field">
+
+                    <label>
+                        Client Acquisition
+                    </label>
+
+                    <input
+                        id="clientAcquisition"
+                        type="text"
+                        class="commercial-input"
+                        placeholder="Direct / Name / Referral"
+                    >
+
+                </div>
+
+                <div class="commercial-field">
+
+                    <label>
+                        Upload Samples Of Ad
+                    </label>
+
+                    <div class="upload-zone">
+
+                        <input
+                            type="file"
+                            id="clientImages"
+                            multiple
+                            accept="image/*"
+                        >
+
+                        <p>
+                            Upload ad reference images
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div
+                    id="imagePreviewContainer"
+                    class="image-preview-container"
+                >
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="commercial-btn secondary"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        id="saveClientBtn"
+                        type="submit"
+                        class="commercial-btn"
+                    >
+                        Save Client
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+<div
+    id="manageChannelModal"
+    class="commercial-modal"
+>
+
+    <div class="commercial-modal-content large">
+
+        <div class="modal-header">
+
+            <h2>
+                Manage Channels
+            </h2>
+
+            <button
+                class="close-modal"
+            >
+                ✕
+            </button>
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table class="commercial-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Channel Name
+                        </th>
+
+                        <th>
+                            Channel URL
+                        </th>
+
+                        <th>
+                            Created Date
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="manageChannelsTable">
+
+                    <tr>
+
+                        <td colspan="4">
+                            No Channels
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div
+    id="manageClientModal"
+    class="commercial-modal"
+>
+
+    <div class="commercial-modal-content large">
+
+        <div class="modal-header">
+
+            <h2>
+                Manage Clients
+            </h2>
+
+            <button
+                class="close-modal"
+            >
+                ✕
+            </button>
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table class="commercial-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Ad Name
+                        </th>
+
+                        <th>
+                            Ad Type
+                        </th>
+
+                        <th>
+                            Client Name
+                        </th>
+
+                        <th>
+                            Client Acquisition
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="manageClientsTable">
+
+                    <tr>
+
+                        <td colspan="5">
+                            No Clients
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script
+    src="{{ url_for('static', filename='js/commercials.js') }}"
+></script>
+{% endblock %}

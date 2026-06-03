@@ -2,9 +2,6 @@ import cv2
 import yt_dlp
 import easyocr
 
-from PIL import Image
-
-import imagehash
 
 from rapidfuzz import fuzz
 
@@ -164,13 +161,6 @@ reader = easyocr.Reader(
     gpu=False
 )
 
-SAMPLE_HASH = imagehash.average_hash(
-
-    Image.open(
-        "static/sample_strip.png"
-    )
-)
-
 
 
 def scan_youtube_video(video_url):
@@ -230,12 +220,31 @@ def scan_youtube_video(video_url):
         fps = 30
 
     frame_interval = int(
-        fps * 3
+        fps * 4
     )
 
     frame_count = 0
 
     while True:
+
+        from app.dashboard.routes import (
+            SCAN_RUNNING
+        )
+
+        if not SCAN_RUNNING:
+
+            cap.release()
+
+            return {
+
+                "channel_name":
+                channel_name,
+
+                "video_title":
+                video_title,
+
+                "results":[]
+            }
 
         success, frame = cap.read()
 
@@ -248,51 +257,47 @@ def scan_youtube_video(video_url):
 
         # SKIP FIRST 10 SECONDS
 
-        if current_time < 10:
+        if current_time < 5:
 
             frame_count += 1
 
             continue
 
-        # SKIP LAST 10 SECONDS
+        # SCAN MAX FIRST 4 MINUTES ONLY
 
-        if duration > 20:
+        scan_limit = min(
 
-            if current_time > (
-                duration - 10
-            ):
+            240,
 
-                break
+            duration
+        )
+
+        if current_time > scan_limit:
+
+            break
 
         if frame_count % frame_interval == 0:
+
+            frame = cv2.resize(
+
+                frame,
+
+                (960,540)
+            )
 
             height = frame.shape[0]
 
             width = frame.shape[1]
+            
 
-            left_area = frame[
-
-                int(height * 0.60):
-                int(height * 0.95),
-
-                0:
-                int(width * 0.45)
-            ]
-
-            right_area = frame[
-
-                int(height * 0.60):
-                int(height * 0.95),
-
-                int(width * 0.55):
-                width
+            bottom_area = frame[
+                int(height * 0.45):height,
+                0:width
             ]
 
             for area in [
 
-                left_area,
-
-                right_area
+                bottom_area
             ]:
 
                 hsv = cv2.cvtColor(
@@ -304,8 +309,8 @@ def scan_youtube_video(video_url):
 
                 lower_red = (
                     0,
-                    20,
-                    20
+                    15,
+                    15
                 )
 
                 upper_red = (
@@ -332,6 +337,15 @@ def scan_youtube_video(video_url):
                     cv2.CHAIN_APPROX_SIMPLE
                 )
 
+                contours = sorted(
+
+                    contours,
+
+                    key=cv2.contourArea,
+
+                    reverse=True
+                )[:20]
+
                 for contour in contours:
 
                     x, y, w, h = cv2.boundingRect(
@@ -341,7 +355,7 @@ def scan_youtube_video(video_url):
                     # IGNORE SMALL NOISE
 
                     if w < 90:
-                        continue
+                        continue                  
 
                     if h < 28:
                         continue
@@ -359,38 +373,7 @@ def scan_youtube_video(video_url):
                         y:y+h,
                         x:x+w
                     ]
-
-                    try:
-
-                        strip_rgb = cv2.cvtColor(
-
-                            strip_crop,
-
-                            cv2.COLOR_BGR2RGB
-                        )
-
-                        pil_img = Image.fromarray(
-                            strip_rgb
-                        )
-
-                        current_hash = imagehash.average_hash(
-                            pil_img
-                        )
-
-                        similarity = 100 - (
-                            current_hash
-                            - SAMPLE_HASH
-                        )
-
-                        # TEMPLATE MATCH
-
-                        if similarity < 10:
-                            continue
-
-                    except Exception:
-
-                        continue
-
+                    
                     gray = cv2.cvtColor(
 
                         strip_crop,
@@ -409,20 +392,35 @@ def scan_youtube_video(video_url):
                         fy=2
                     )
 
-                    gray = cv2.adaptiveThreshold(
+                    _, gray = cv2.threshold(
 
                         gray,
 
+                        140,
+
                         255,
 
-                        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-
-                        cv2.THRESH_BINARY,
-
-                        11,
-
-                        2
+                        cv2.THRESH_BINARY
                     )
+
+                    from app.dashboard.routes import (
+                        SCAN_RUNNING
+                    )
+
+                    if not SCAN_RUNNING:
+
+                        cap.release()
+
+                        return {
+
+                            "channel_name":
+                            channel_name,
+
+                            "video_title":
+                            video_title,
+
+                            "results":[]
+                        }
 
                     results = reader.readtext(
 
@@ -430,8 +428,29 @@ def scan_youtube_video(video_url):
 
                         detail=0,
 
-                        paragraph=False
+                        paragraph=False,
+
+                        allowlist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz "
                     )
+
+                    from app.dashboard.routes import (
+                        SCAN_RUNNING
+                    )
+
+                    if not SCAN_RUNNING:
+
+                        cap.release()
+
+                        return {
+
+                            "channel_name":
+                            channel_name,
+
+                            "video_title":
+                            video_title,
+
+                            "results":[]
+                        }
 
                     for item in results:
 
@@ -486,7 +505,7 @@ def scan_youtube_video(video_url):
 
                         # STRONG FUZZY MATCH
 
-                        if best_score >= 78:
+                        if best_score >= 93:
 
                             cap.release()
 

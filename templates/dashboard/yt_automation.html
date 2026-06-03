@@ -1,11 +1,30 @@
 {% extends "layouts/dashboard_layout.html" %}
 
 {% block extra_css %}
+
 <link
     rel="stylesheet"
-    href="{{ url_for('static', filename='css/yt_automation.css') }}"
+    href="{{ url_for(
+        'static',
+        filename='css/yt_automation.css'
+    ) }}"
 >
+
 {% endblock %}
+
+
+{% block extra_js %}
+
+<script
+    defer
+    src="{{ url_for(
+        'static',
+        filename='js/yt_automation.js'
+    ) }}"
+></script>
+
+{% endblock %}
+
 
 {% block page_title %}
 YT Automation
@@ -16,19 +35,10 @@ YT Automation
 <div class="yt-topbar">
 
     <h1 class="yt-main-title">
-        YT Automation
+        YT Automation (Testing Mode)
     </h1>
 
     <div class="yt-top-actions">
-
-        <button
-            class="filter-toggle-btn"
-            id="filterToggleBtn"
-        >
-
-            Filters
-
-        </button>
 
         <button
             type="button"
@@ -36,7 +46,17 @@ YT Automation
             id="openChannelModal"
         >
 
-            +
+            + Add Channel
+
+        </button>
+
+        <button
+            type="button"
+            class="export-btn"
+            id="exportBtn"
+        >
+
+            ⭳
 
         </button>
 
@@ -44,71 +64,152 @@ YT Automation
 
 </div>
 
-<form
-    method="POST"
-    action="/workspace/run-channel-scan"
+<div
     class="filter-panel"
     id="filterPanel"
 >
 
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
+    <!-- LEFT BLOCK -->
+
+    <form
+        method="POST"
+        action="/workspace/run-channel-scan"
+        class="filter-left-group"
     >
 
-    <select
-        name="channel_id"
-        class="filter-input"
-        required
-    >
-
-        <option
-            value=""
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
         >
 
-            Select Channel
-
-        </option>
-
-        {% for channel in channels %}
-
-        <option
-            value="{{ channel.id }}"
+        <select
+            name="channel_id"
+            class="filter-input"
+            required
         >
 
-            {{ channel.channel_name }}
+            <option value="">
 
-        </option>
+                Select Channel
 
-        {% endfor %}
+            </option>
 
-    </select>
+            {% for channel in channels %}
 
-    <input
-        type="date"
-        name="from_date"
-        class="filter-input"
-        required
-    >
+            {% if channel.is_active %}
 
-    <input
-        type="date"
-        name="to_date"
-        class="filter-input"
-        required
-    >
+            <option
+                value="{{ channel.id }}"
+            >
 
-    <button
-        type="submit"
-        class="run-scan-btn"
-    >
+                {{ channel.channel_name }}
 
-        Run Scan
+            </option>
 
-    </button>
+            {% endif %}
 
-</form>
+            {% endfor %}
+
+        </select>
+
+        <select
+            name="video_count"
+            class="filter-input"
+            required
+        >
+
+            <option value="10">
+                Last 10 Videos
+            </option>
+
+            <option 
+                value="20"
+                selected
+            >
+                Last 20 Videos
+            </option>
+
+            <option value="30">
+                Last 30 Videos
+            </option>
+
+            <option value="40">
+                Last 40 Videos
+            </option>
+
+            <option
+                value="50"
+            >
+                Last 50 Videos
+            </option>
+
+            <option value="75">
+                Last 75 Videos
+            </option>
+
+            <option value="100">
+                Last 100 Videos
+            </option>
+
+        </select>
+
+        <button
+            type="submit"
+            class="run-scan-btn"
+            id="runScanBtn"
+        >
+
+            ▶︎
+
+        </button>
+
+        <button
+            type="button"
+            class="stop-scan-btn"
+            id="stopScanBtn"
+            style="display:none;"
+            title="Stop Scan"
+
+        >
+
+            ⏹
+
+        </button>
+
+        <div
+            class="table-floating-actions"
+            id="selectedActions"
+        >
+
+            <button
+                type="button"
+                class="floating-action-btn"
+                id="editBtn"
+                title="Edit"
+            >
+
+                ✎
+
+            </button>
+
+            <button
+                type="button"
+                class="floating-action-btn delete-floating-btn"
+                id="deleteBtn"
+                title="Delete"
+            >
+
+                🗑
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
 
 <div
     class="channel-modal-overlay"
@@ -122,6 +223,13 @@ YT Automation
             <h2>
                 Add Channel
             </h2>
+
+            <p class="channel-modal-subtitle">
+
+                Add channel once.
+                Future scans can fetch videos automatically.
+
+            </p>
 
             <button
                 class="close-modal-btn"
@@ -172,92 +280,11 @@ YT Automation
 
 </div>
 
-<form
-    method="POST"
-    class="yt-manual-form"
+
+<div
+    class="results-table-wrapper"
+    id="automationTable"
 >
-
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
-
-    <input
-        type="text"
-        name="youtube_link"
-        class="yt-manual-input"
-        placeholder="Paste YouTube Link..."
-        required
-    >
-
-    <button
-        type="submit"
-        class="yt-manual-btn"
-    >
-
-        Save Link
-
-    </button>
-
-</form>
-
-<div class="table-actions-bar">
-
-    <div class="table-right-actions">
-
-        <button
-            type="button"
-            class="table-menu-btn"
-            id="tableMenuBtn"
-        >
-
-            ⋯
-
-        </button>
-
-        <div
-            class="table-dropdown"
-            id="tableDropdown"
-        >
-
-            <button
-                type="button"
-                id="editSelectedBtn"
-                class="table-dropdown-btn"
-            >
-
-                Edit
-
-            </button>
-
-            <button
-                type="button"
-                id="deleteSelectedBtn"
-                class="table-dropdown-btn"
-            >
-
-                Delete
-
-            </button>
-
-            <button
-                type="button"
-                id="exportSelectedBtn"
-                class="table-dropdown-btn"
-            >
-
-                Export
-
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
-<div class="results-table-wrapper">
 
     <table class="results-table">
 
@@ -274,17 +301,17 @@ YT Automation
 
                 </th>
 
-                <th>ID</th>
+                <th>S.No</th>
 
                 <th>Channel</th>
 
-                <th>Link</th>
+                <th>Video Title</th>
 
                 <th>Strip</th>
 
-                <th>Publish Date</th>
+                <th>Time</th>
 
-                <th>Video Title</th>
+                <th>Open</th>
 
             </tr>
 
@@ -292,7 +319,7 @@ YT Automation
 
         <tbody>
 
-            {% for item in links %}
+            {% for item in strip_results %}
 
             <tr>
 
@@ -301,42 +328,67 @@ YT Automation
                     <input
                         type="checkbox"
                         class="row-checkbox"
-                        value="{{ item.id }}"
+                        data-id="{{ item.id }}"
                     >
 
                 </td>
 
                 <td>
-                    {{ item.id }}
+
+                    {{ loop.index }}
+
                 </td>
 
                 <td>
+
                     {{ item.channel_name }}
+
+                </td>
+
+                <td>
+
+                    {{ item.video_title }}
+
+                </td>
+
+                <td
+                    class="strip-cell"
+                >
+
+                    <span
+                        class="strip-text"
+                    >
+
+                        {{ item.strip_text }}
+
+                    </span>
+
+                    <input
+                        type="text"
+                        class="strip-edit-input"
+                        value="{{ item.strip_text }}"
+                    >
+
+                </td>
+
+                <td>
+
+                    {{ item.detected_time }}
+
                 </td>
 
                 <td>
 
                     <a
-                        href="{{ item.link }}"
+                        href="{{ item.video_url }}"
                         target="_blank"
+                        class="video-open-btn"
                     >
 
-                        Open Video
+                        ↗
 
                     </a>
 
-                </td>
-
-                <td>
-                    {{ item.strip_name }}
-                </td>
-
-                <td>
-                    {{ item.created_at }}
-                </td>
-
-                <td>
-                    {{ item.link }}
                 </td>
 
             </tr>
@@ -350,7 +402,7 @@ YT Automation
                     class="empty-table"
                 >
 
-                    No Results Found
+                    No Automation Results
 
                 </td>
 
@@ -361,6 +413,16 @@ YT Automation
         </tbody>
 
     </table>
+
+</div>
+
+
+<div
+    class="yt-toast"
+    id="ytToast"
+>
+
+    Action Completed
 
 </div>
 
